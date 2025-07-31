@@ -1,50 +1,110 @@
-# Welcome to your Expo app 👋
+# 🧘‍♂️ MindfulFlow
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**MindfulFlow** is a digital wellbeing mobile app built with **React Native** and **Expo**, designed to help users maintain healthy device usage habits and reduce digital fatigue. The app uses AI-powered features such as emotion detection, posture analysis, eye strain tracking, and doomscrolling prevention to provide intelligent, personalized prompts and break reminders.
 
-## Get started
+## ✨ Features
 
-1. Install dependencies
+- 📱 Emotion recognition via camera (MediaPipe, TensorFlow Lite)
+- 🧍‍♂️ Posture and eye strain detection using phone sensors
+- ⚪ Monochrome screen mode for late-night use
+- 🧠 Doomscrolling and overuse detection
+- ⏱️ Context-aware break timers and breathing prompts
+- 🎨 Beautiful and minimal Figma-based UI
+
+---
+
+## 🚀 Tech Stack
+
+- **Frontend**: React Native, Expo, TypeScript
+- **Backend**: Node.js, Express, Firebase (or Supabase)
+- **ML Models**: MediaPipe, TensorFlow Lite, custom fine-tuned models
+- **Design**: Figma, Tailwind-like utility-first styling
+
+---
+
+## 📲 Getting Started (for Developers)
+
+### 🔧 Prerequisites
+
+- [Node.js](https://nodejs.org/)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- [Git](https://git-scm.com/)
+- Expo Go App on your **Android** or **iOS** device
+
+### 📦 Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/your-org/mindfulflow.git
+   cd mindfulflow
+   ```
+
+2. **Install dependencies:**
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. **Start the development server:**
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+4. **Scan the QR code** with the **Expo Go App** (available on Google Play or App Store) to run it on your device.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🛠️ Useful Commands
 
-## Get a fresh project
+| Command            | Description                             |
+| ------------------ | --------------------------------------- |
+| `npx expo start`   | Starts the dev server with QR code      |
+| `npx expo install` | Installs Expo-compatible dependencies   |
+| `npm run android`  | Runs app on Android emulator (if setup) |
+| `npm run ios`      | Runs app on iOS simulator (macOS only)  |
+| `expo publish`     | Publishes the app to Expo's servers     |
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
+## 👨‍💻 Contributing
+
+Team Members:
+
+- **Benak** – App Development, Backend, ML Integration
+- **Dhanush** – AI/ML Research, Model Tuning
+- **Akshatha** – UI/UX Design, Figma Assets
+- **Basaveshwari** – UI/UX Design, Branding, Visuals
+
+To contribute, create a new branch and submit a pull request. Please follow the coding style and folder structure.
+
+---
+
+## 📁 Project Structure (Simplified)
+
+```
+mindfulflow/
+│
+├── assets/               # Images, fonts, icons
+├── components/           # Shared React Native components
+├── screens/              # App screens
+├── ml/                   # TFLite/ML model logic
+├── backend/              # Backend endpoints (optional)
+├── App.tsx               # Root app file
+└── README.md
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 📌 Notes
 
-To learn more about developing your project with Expo, look at the following resources:
+- This is a WIP (Work in Progress) project.
+- AI model performance may vary based on device and tuning.
+- Final release will include accessibility options and multilingual support.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 📄 License
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+MIT License – See [`LICENSE`](LICENSE) file for details.
