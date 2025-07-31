@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "movie_app",
-    "slug": "movie_app",
+    "name": "MindfulFlow",
+    "slug": "MindfulFlow",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "movieapp",
+    "icon": "./assets/images/logo.png",
+    "scheme": "mindfulflow",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
