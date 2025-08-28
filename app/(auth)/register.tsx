@@ -11,7 +11,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterScreen() {
@@ -240,14 +240,13 @@ export default function RegisterScreen() {
               <Text className="text-gray-600 text-base">
                 Already have an account?{" "}
               </Text>
-              @ts-expect-error
-              <Link href="/(auth)/login" asChild>
-                <TouchableOpacity disabled={loading}>
-                  <Text className="text-blue-600 font-semibold text-base">
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-              </Link>
+              <TouchableOpacity
+                onPress={() => router.push("/(auth)/login")}
+                disabled={loading}>
+                <Text className="text-blue-600 font-semibold text-base">
+                  Sign In
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
