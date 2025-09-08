@@ -1,63 +1,200 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import FaceMeshOverlay from '@/components/FaceMeshOverlay';
+import BlinkRateStats from '@/components/BlinkRateStats';
+import { FaceDetectionResult } from '@/types/face-detection';
+
+interface BlinkData {
+  timestamp: number;
+  leftEyeOpen: boolean;
+  rightEyeOpen: boolean;
+}
+
+// Mock face detection for development
+const simulateFaceDetection = (): FaceDetectionResult => {
+  const isBlinking = Math.random() > 0.8; // 20% chance of blink
+  return {
+    bounds: {
+      origin: { x: 100, y: 150 },
+      size: { width: 200, height: 250 }
+    },
+    landmarks: {
+      leftEye: { x: 150, y: 200 },
+      rightEye: { x: 250, y: 200 },
+      noseBase: { x: 200, y: 250 },
+      leftMouth: { x: 180, y: 300 },
+      rightMouth: { x: 220, y: 300 }
+    },
+    leftEyeOpenProbability: isBlinking ? 0.2 : 0.8,
+    rightEyeOpenProbability: isBlinking ? 0.2 : 0.8
+  };
+};
 
 export default function Monitor() {
+  const [permission, requestPermission] = useCameraPermissions();
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [blinkRate, setBlinkRate] = useState(18);
-  const [postureScore, setPostureScore] = useState(85);
-  const [emotionalState] = useState("Neutral");
+  const [faces, setFaces] = useState<FaceDetectionResult[]>([]);
+  const [blinkRate, setBlinkRate] = useState(0);
+  const [totalBlinks, setTotalBlinks] = useState(0);
   const [sessionTime, setSessionTime] = useState(0);
 
-  // Mock timer for session tracking
+  const cameraRef = useRef<CameraView>(null);
+  const blinkDataRef = useRef<BlinkData[]>([]);
+  const lastBlinkStateRef = useRef<{ left: boolean; right: boolean }>({ left: true, right: true });
+  const sessionStartRef = useRef<number>(Date.now());
+  const detectionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     if (isMonitoring) {
+      sessionStartRef.current = Date.now();
       interval = setInterval(() => {
-        setSessionTime((prev) => prev + 1);
-        // Mock data updates
-        setBlinkRate(Math.floor(Math.random() * (25 - 12) + 12));
-        setPostureScore(Math.floor(Math.random() * (100 - 60) + 60));
+        setSessionTime(Math.floor((Date.now() - sessionStartRef.current) / 1000));
       }, 1000);
+    } else {
+      if (interval) {
+        clearInterval(interval);
+      }
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [isMonitoring]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  // Face detection simulation
+  useEffect(() => {
+    if (isMonitoring) {
+      detectionIntervalRef.current = setInterval(() => {
+        const mockFace = simulateFaceDetection();
+        handleFaceDetected(mockFace);
+      }, 200); // Detect every 200ms
+    } else {
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+        detectionIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
+    };
+  }, [isMonitoring]);
+
+  const handleFaceDetected = (face: FaceDetectionResult) => {
+    setFaces([face]);
+
+    // Use ML Kit's built-in eye open probability
+    let leftEyeOpen = true;
+    let rightEyeOpen = true;
+
+    if (face.leftEyeOpenProbability !== undefined) {
+      leftEyeOpen = face.leftEyeOpenProbability > 0.5;
+    }
+
+    if (face.rightEyeOpenProbability !== undefined) {
+      rightEyeOpen = face.rightEyeOpenProbability > 0.5;
+    }
+
+    detectBlink(leftEyeOpen, rightEyeOpen);
   };
 
-  const getPostureStatus = (score: number) => {
-    if (score >= 80) return { status: "Good", color: "text-green-600" };
-    if (score >= 60) return { status: "Fair", color: "text-yellow-600" };
-    return { status: "Poor", color: "text-red-600" };
+  const detectBlink = (leftEyeOpen: boolean, rightEyeOpen: boolean) => {
+    const currentTime = Date.now();
+    const wasLeftOpen = lastBlinkStateRef.current.left;
+    const wasRightOpen = lastBlinkStateRef.current.right;
+
+    // Detect blink: eye was open and now closed
+    const leftBlink = !leftEyeOpen && wasLeftOpen;
+    const rightBlink = !rightEyeOpen && wasRightOpen;
+
+    if (leftBlink || rightBlink) {
+      setTotalBlinks(prev => prev + 1);
+
+      // Add blink data for rate calculation
+      blinkDataRef.current.push({
+        timestamp: currentTime,
+        leftEyeOpen,
+        rightEyeOpen
+      });
+
+      // Keep only last 60 seconds of data
+      blinkDataRef.current = blinkDataRef.current.filter(
+        data => currentTime - data.timestamp < 60000
+      );
+
+      // Calculate blinks per minute
+      const blinksInLastMinute = blinkDataRef.current.length;
+      setBlinkRate(blinksInLastMinute);
+    }
+
+    lastBlinkStateRef.current = { left: leftEyeOpen, right: rightEyeOpen };
   };
 
-  const getBlinkStatus = (rate: number) => {
-    if (rate >= 15 && rate <= 20)
-      return { status: "Normal", color: "text-green-600" };
-    if (rate < 10) return { status: "Low - Eye Strain", color: "text-red-600" };
-    return { status: "High", color: "text-yellow-600" };
+  const startMonitoring = async () => {
+    if (!permission?.granted) {
+      await requestPermission();
+      return;
+    }
+
+    setIsMonitoring(true);
+    setTotalBlinks(0);
+    setBlinkRate(0);
+    blinkDataRef.current = [];
+    sessionStartRef.current = Date.now();
+  };
+
+  const stopMonitoring = () => {
+    setIsMonitoring(false);
+    setFaces([]);
   };
 
   const toggleMonitoring = () => {
     if (!isMonitoring) {
       Alert.alert(
-        "Start Monitoring",
-        "MindfulFlow will monitor your eye movements, posture, and emotional state using your device's camera and sensors.",
+        "Start Blink Monitoring",
+        "MindfulFlow will monitor your blink rate using your device's front camera.",
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Start", onPress: () => setIsMonitoring(true) },
+          { text: "Start", onPress: startMonitoring },
         ],
       );
     } else {
-      setIsMonitoring(false);
-      setSessionTime(0);
+      stopMonitoring();
     }
   };
+
+  if (!permission) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+        <Text>Requesting camera permission...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center px-4">
+        <Text className="text-lg text-center mb-4">
+          Camera permission is required to monitor your blink rate
+        </Text>
+        <TouchableOpacity
+          onPress={requestPermission}
+          className="bg-purple-600 px-6 py-3 rounded-full"
+        >
+          <Text className="text-white font-semibold">Grant Permission</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -65,40 +202,39 @@ export default function Monitor() {
         {/* Header */}
         <View className="mb-8">
           <Text className="text-3xl font-bold text-gray-900 mb-2">
-            Wellness Monitor
+            Blink Rate Monitor
           </Text>
           <Text className="text-gray-600">
-            Real-time tracking of your digital wellness
+            Real-time tracking of your eye health through blink detection
           </Text>
         </View>
 
-        {/* Monitoring Controls */}
-        <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
-          <View className="items-center mb-6">
+        {/* Blink Rate Monitoring Card */}
+        <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm overflow-hidden">
+          <View className="items-center mb-4">
             <View
-              className={`w-24 h-24 rounded-full items-center justify-center mb-4 ${
-                isMonitoring ? "bg-purple-100" : "bg-gray-100"
-              }`}
+              className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${isMonitoring ? "bg-purple-100" : "bg-gray-100"
+                }`}
             >
               <Ionicons
                 name={isMonitoring ? "eye" : "eye-off"}
-                size={40}
+                size={32}
                 color={isMonitoring ? "#8B5CF6" : "#6B7280"}
               />
             </View>
             <Text className="text-lg font-semibold text-gray-900 mb-2">
-              {isMonitoring ? "Monitoring Active" : "Start Monitoring"}
+              {isMonitoring ? "Blink Monitoring Active" : "Blink Rate Monitor"}
             </Text>
-            <Text className="text-gray-600 text-center mb-6">
+            <Text className="text-gray-600 text-center mb-4">
               {isMonitoring
-                ? "Tracking your wellness metrics in real-time"
-                : "Tap to begin monitoring your digital wellness"}
+                ? "Tracking your blink rate in real-time"
+                : "Monitor your eye health through blink detection"}
             </Text>
+
             <TouchableOpacity
               onPress={toggleMonitoring}
-              className={`px-8 py-3 rounded-full ${
-                isMonitoring ? "bg-red-500" : "bg-purple-600"
-              }`}
+              className={`px-6 py-3 rounded-full mb-4 ${isMonitoring ? "bg-red-500" : "bg-purple-600"
+                }`}
             >
               <Text className="text-white font-semibold">
                 {isMonitoring ? "Stop Monitoring" : "Start Monitoring"}
@@ -106,164 +242,88 @@ export default function Monitor() {
             </TouchableOpacity>
           </View>
 
+          {/* Camera Preview */}
           {isMonitoring && (
-            <View className="border-t border-gray-200 pt-4">
-              <Text className="text-center text-gray-600">
-                Session Time:{" "}
-                <Text className="font-mono font-bold">
-                  {formatTime(sessionTime)}
-                </Text>
+            <View className="mb-4">
+              <Text className="text-sm text-gray-600 mb-2 text-center">
+                Camera Preview {faces.length > 0 ? "(Face detected)" : "(Searching for face)"}
+              </Text>
+              <View style={styles.cameraContainer}>
+                <CameraView
+                  ref={cameraRef}
+                  style={styles.camera}
+                  facing="front"
+                >
+                  <FaceMeshOverlay faces={faces} />
+                </CameraView>
+              </View>
+              <Text className="text-xs text-gray-500 text-center mt-2">
+                {faces.length > 0 ? "✓ Face detected with eye tracking" : "⏳ Looking for face..."}
               </Text>
             </View>
           )}
+
+          {/* Blink Statistics */}
+          {isMonitoring && (
+            <BlinkRateStats
+              blinkRate={blinkRate}
+              totalBlinks={totalBlinks}
+              sessionTime={sessionTime}
+              isDetecting={isMonitoring}
+            />
+          )}
         </View>
 
-        {/* Live Metrics */}
-        {isMonitoring && (
-          <View className="space-y-4">
-            {/* Eye Health Card */}
-            <View className="bg-white rounded-2xl p-6 shadow-sm">
-              <View className="flex-row items-center mb-4">
-                <Ionicons name="eye" size={24} color="#8B5CF6" />
-                <Text className="text-lg font-semibold text-gray-900 ml-3">
-                  Eye Health
-                </Text>
-              </View>
-              <View className="space-y-3">
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-gray-600">Blink Rate</Text>
-                  <View className="items-end">
-                    <Text className="text-xl font-bold text-gray-900">
-                      {blinkRate}/min
-                    </Text>
-                    <Text
-                      className={`text-sm ${getBlinkStatus(blinkRate).color}`}
-                    >
-                      {getBlinkStatus(blinkRate).status}
-                    </Text>
-                  </View>
-                </View>
-                <View className="bg-gray-200 h-2 rounded-full">
-                  <View
-                    className="bg-purple-600 h-2 rounded-full"
-                    style={{
-                      width: `${Math.min((blinkRate / 25) * 100, 100)}%`,
-                    }}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Posture Card */}
-            <View className="bg-white rounded-2xl p-6 shadow-sm">
-              <View className="flex-row items-center mb-4">
-                <Ionicons name="body" size={24} color="#8B5CF6" />
-                <Text className="text-lg font-semibold text-gray-900 ml-3">
-                  Posture
-                </Text>
-              </View>
-              <View className="space-y-3">
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-gray-600">Posture Score</Text>
-                  <View className="items-end">
-                    <Text className="text-xl font-bold text-gray-900">
-                      {postureScore}%
-                    </Text>
-                    <Text
-                      className={`text-sm ${getPostureStatus(postureScore).color}`}
-                    >
-                      {getPostureStatus(postureScore).status}
-                    </Text>
-                  </View>
-                </View>
-                <View className="bg-gray-200 h-2 rounded-full">
-                  <View
-                    className="bg-purple-600 h-2 rounded-full"
-                    style={{ width: `${postureScore}%` }}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Emotional State Card */}
-            <View className="bg-white rounded-2xl p-6 shadow-sm">
-              <View className="flex-row items-center mb-4">
-                <Ionicons name="happy" size={24} color="#8B5CF6" />
-                <Text className="text-lg font-semibold text-gray-900 ml-3">
-                  Emotional State
-                </Text>
-              </View>
-              <View className="flex-row justify-between items-center">
-                <Text className="text-gray-600">Current State</Text>
-                <Text className="text-xl font-bold text-gray-900">
-                  {emotionalState}
+        {/* Information Card */}
+        <View className="bg-white rounded-2xl p-6 shadow-sm">
+          <Text className="text-lg font-semibold text-gray-900 mb-4">
+            About Blink Rate Monitoring
+          </Text>
+          <View className="space-y-3">
+            <View className="flex-row items-start">
+              <Ionicons name="information-circle" size={20} color="#8B5CF6" />
+              <View className="ml-3 flex-1">
+                <Text className="font-medium text-gray-900">Normal Blink Rate</Text>
+                <Text className="text-gray-600 text-sm">
+                  15-20 blinks per minute is considered healthy
                 </Text>
               </View>
             </View>
-
-            {/* Quick Actions */}
-            <View className="bg-white rounded-2xl p-6 shadow-sm">
-              <Text className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Actions
-              </Text>
-              <View className="flex-row justify-between">
-                <TouchableOpacity className="flex-1 bg-blue-50 rounded-xl p-4 mr-2 items-center">
-                  <Ionicons name="pause" size={24} color="#3B82F6" />
-                  <Text className="text-blue-600 font-medium mt-2">
-                    Take Break
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity className="flex-1 bg-green-50 rounded-xl p-4 ml-2 items-center">
-                  <Ionicons name="fitness" size={24} color="#10B981" />
-                  <Text className="text-green-600 font-medium mt-2">
-                    Stretch
-                  </Text>
-                </TouchableOpacity>
+            <View className="flex-row items-start">
+              <Ionicons name="warning" size={20} color="#8B5CF6" />
+              <View className="ml-3 flex-1">
+                <Text className="font-medium text-gray-900">Low Blink Rate</Text>
+                <Text className="text-gray-600 text-sm">
+                  Less than 10 blinks/minute may indicate eye strain or digital fatigue
+                </Text>
+              </View>
+            </View>
+            <View className="flex-row items-start">
+              <Ionicons name="eye" size={20} color="#8B5CF6" />
+              <View className="ml-3 flex-1">
+                <Text className="font-medium text-gray-900">Why It Matters</Text>
+                <Text className="text-gray-600 text-sm">
+                  Blinking keeps your eyes moist and prevents digital eye strain
+                </Text>
               </View>
             </View>
           </View>
-        )}
-
-        {/* When not monitoring */}
-        {!isMonitoring && (
-          <View className="bg-white rounded-2xl p-6 shadow-sm">
-            <Text className="text-lg font-semibold text-gray-900 mb-4">
-              What We Track
-            </Text>
-            <View className="space-y-4">
-              <View className="flex-row items-start">
-                <Ionicons name="eye" size={20} color="#8B5CF6" />
-                <View className="ml-3 flex-1">
-                  <Text className="font-medium text-gray-900">Eye Strain</Text>
-                  <Text className="text-gray-600 text-sm">
-                    Monitor blink rate and detect eye fatigue
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row items-start">
-                <Ionicons name="body" size={20} color="#8B5CF6" />
-                <View className="ml-3 flex-1">
-                  <Text className="font-medium text-gray-900">Posture</Text>
-                  <Text className="text-gray-600 text-sm">
-                    Track slouching and head position
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row items-start">
-                <Ionicons name="happy" size={20} color="#8B5CF6" />
-                <View className="ml-3 flex-1">
-                  <Text className="font-medium text-gray-900">
-                    Emotional Well-being
-                  </Text>
-                  <Text className="text-gray-600 text-sm">
-                    Recognize emotional states and stress levels
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  cameraContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  camera: {
+    flex: 1,
+  },
+});
