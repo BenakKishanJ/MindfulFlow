@@ -1,9 +1,9 @@
 // app/_layout.tsx
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { Slot, useRouter, useSegments } from 'expo-router';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import '../globals.css';
+import React, { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
+import { Slot, useRouter, useSegments } from "expo-router";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import "../globals.css";
 
 // This component handles the route protection logic
 function InitialLayout() {
@@ -19,10 +19,10 @@ function InitialLayout() {
 
     if (currentUser && inAuthGroup) {
       // User is signed in but in auth group, redirect to main app
-      router.replace('/(tabs)' as never);
+      router.replace("/(tabs)" as never);
     } else if (!currentUser && !inAuthGroup) {
       // User is not signed in but not in auth group, redirect to login
-      router.replace('/(auth)/login' as never);
+      router.replace("/(auth)/login" as never);
     }
   }, [currentUser, loading, segments, router]);
 

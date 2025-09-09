@@ -16,9 +16,10 @@ import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot 
 import { auth, db } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_API_KEY } from '@env';
 
 // Initialize Gemini with your API key
-const genAI = new GoogleGenerativeAI('AIzaSyDPh8MieZkqvpOCG4e4MCnu7Wl5Tg-balY'); // Replace with your Google AI Studio API key
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY); // Replace with your Google AI Studio API key
 
 interface Message {
   id: string;

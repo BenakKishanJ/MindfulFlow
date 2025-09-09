@@ -1,5 +1,6 @@
 {
   "expo": {
+    "main": "expo-router/entry",
     "name": "MindfulFlow",
     "slug": "MindfulFlow",
     "version": "1.0.0",
