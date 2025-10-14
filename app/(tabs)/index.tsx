@@ -8,20 +8,23 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as tf from '@tensorflow/tfjs';
+import { CameraView, useCameraPermissions } from "expo-camera";
+// import * as tf from '@tensorflow/tfjs';
 
 // Import our custom components and services
-import FaceMeshOverlay from '@/components/FaceMeshOverlay';
-import BlinkRateStats from '@/components/BlinkRateStats';
-import { FaceDetectionService, BlinkDetectionService } from '@/services/faceDetectionService';
-import { FaceDetectionResult } from '@/types/face-detection';
+import FaceMeshOverlay from "@/components/FaceMeshOverlay";
+import BlinkRateStats from "@/components/BlinkRateStats";
+import {
+  FaceDetectionService,
+  BlinkDetectionService,
+} from "@/services/faceDetectionService";
+import { FaceDetectionResult } from "@/types/face-detection";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 const CAMERA_WIDTH = screenWidth - 32;
 const CAMERA_HEIGHT = (CAMERA_WIDTH * 4) / 3; // 4:3 aspect ratio
 
@@ -44,13 +47,21 @@ export default function Monitor() {
   const [sessionTime, setSessionTime] = useState(0);
 
   // Services
-  const faceDetectionService = useRef<FaceDetectionService>(new FaceDetectionService());
-  const blinkDetectionService = useRef<BlinkDetectionService>(new BlinkDetectionService());
+  const faceDetectionService = useRef<FaceDetectionService>(
+    new FaceDetectionService(),
+  );
+  const blinkDetectionService = useRef<BlinkDetectionService>(
+    new BlinkDetectionService(),
+  );
 
   // Timers
   const sessionStartRef = useRef<number>(Date.now());
-  const detectionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sessionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const detectionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+  const sessionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   // Initialize TensorFlow and face detection
   useEffect(() => {
@@ -61,17 +72,17 @@ export default function Monitor() {
         setIsInitializing(true);
 
         // Initialize TensorFlow.js
-        await tf.ready();
-        console.log('TensorFlow.js initialized');
+        // await tf.ready();
+        console.log("TensorFlow.js initialized");
 
         // Initialize face detection service
         const initialized = await service?.initialize();
         if (!initialized) {
-          Alert.alert('Error', 'Failed to initialize face detection');
+          Alert.alert("Error", "Failed to initialize face detection");
         }
       } catch (error) {
-        console.error('TensorFlow initialization error:', error);
-        Alert.alert('Error', 'Failed to initialize AI models');
+        console.error("TensorFlow initialization error:", error);
+        Alert.alert("Error", "Failed to initialize AI models");
       } finally {
         setIsInitializing(false);
       }
@@ -89,7 +100,9 @@ export default function Monitor() {
     if (isMonitoring) {
       sessionStartRef.current = Date.now();
       sessionIntervalRef.current = setInterval(() => {
-        setSessionTime(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+        setSessionTime(
+          Math.floor((Date.now() - sessionStartRef.current) / 1000),
+        );
       }, 1000);
     } else {
       if (sessionIntervalRef.current) {
@@ -118,14 +131,16 @@ export default function Monitor() {
 
       if (photo && photo.uri) {
         // Convert image to tensor
-        const imageTensor = await faceDetectionService.current.processImageTensor(
-          photo.uri,
-          CAMERA_WIDTH,
-          CAMERA_HEIGHT
-        );
+        const imageTensor =
+          await faceDetectionService.current.processImageTensor(
+            photo.uri,
+            CAMERA_WIDTH,
+            CAMERA_HEIGHT,
+          );
 
         // Detect faces
-        const detectedFaces = await faceDetectionService.current.detectFaces(imageTensor);
+        const detectedFaces =
+          await faceDetectionService.current.detectFaces(imageTensor);
 
         // Clean up tensor
         imageTensor.dispose();
@@ -136,25 +151,29 @@ export default function Monitor() {
           setDetectionConfidence(face.probability);
 
           // Process blink detection
-          if (face.leftEyeOpenProbability !== undefined && face.rightEyeOpenProbability !== undefined) {
+          if (
+            face.leftEyeOpenProbability !== undefined &&
+            face.rightEyeOpenProbability !== undefined
+          ) {
             const blinkResult = blinkDetectionService.current.detectBlink(
               face.leftEyeOpenProbability,
-              face.rightEyeOpenProbability
+              face.rightEyeOpenProbability,
             );
 
             if (blinkResult.anyBlink) {
-              setTotalBlinks(prev => prev + 1);
+              setTotalBlinks((prev) => prev + 1);
 
               if (blinkResult.leftBlink) {
-                setLeftEyeBlinks(prev => prev + 1);
+                setLeftEyeBlinks((prev) => prev + 1);
               }
               if (blinkResult.rightBlink) {
-                setRightEyeBlinks(prev => prev + 1);
+                setRightEyeBlinks((prev) => prev + 1);
               }
             }
 
             // Update blink rate
-            const currentRate = blinkDetectionService.current.calculateBlinkRate();
+            const currentRate =
+              blinkDetectionService.current.calculateBlinkRate();
             setBlinkRate(currentRate);
           }
         } else {
@@ -163,7 +182,7 @@ export default function Monitor() {
         }
       }
     } catch (error) {
-      console.error('Face detection error:', error);
+      console.error("Face detection error:", error);
     }
   }, [isMonitoring]);
 
@@ -189,13 +208,19 @@ export default function Monitor() {
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
-        Alert.alert('Permission Required', 'Camera permission is required for blink monitoring');
+        Alert.alert(
+          "Permission Required",
+          "Camera permission is required for blink monitoring",
+        );
         return;
       }
     }
 
     if (isInitializing) {
-      Alert.alert('Please Wait', 'AI models are still loading. Please try again in a moment.');
+      Alert.alert(
+        "Please Wait",
+        "AI models are still loading. Please try again in a moment.",
+      );
       return;
     }
 
@@ -274,13 +299,16 @@ export default function Monitor() {
             Camera Access Required
           </Text>
           <Text className="text-gray-600 text-center mb-8 leading-6">
-            MindfulFlow needs camera access to monitor your blink rate and help maintain your eye health during screen time.
+            MindfulFlow needs camera access to monitor your blink rate and help
+            maintain your eye health during screen time.
           </Text>
           <TouchableOpacity
             onPress={requestPermission}
             className="bg-purple-600 px-8 py-4 rounded-full shadow-lg"
           >
-            <Text className="text-white font-semibold text-lg">Grant Camera Access</Text>
+            <Text className="text-white font-semibold text-lg">
+              Grant Camera Access
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -289,7 +317,10 @@ export default function Monitor() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-4 py-6"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View className="mb-8">
           <Text className="text-3xl font-bold text-gray-900 mb-2">
@@ -304,8 +335,9 @@ export default function Monitor() {
         <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
           <View className="items-center mb-4">
             <View
-              className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${isMonitoring ? "bg-purple-100" : "bg-gray-100"
-                }`}
+              className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${
+                isMonitoring ? "bg-purple-100" : "bg-gray-100"
+              }`}
             >
               <Ionicons
                 name={isMonitoring ? "eye" : "eye-off"}
@@ -326,8 +358,9 @@ export default function Monitor() {
 
             <TouchableOpacity
               onPress={toggleMonitoring}
-              className={`px-8 py-4 rounded-full shadow-lg ${isMonitoring ? "bg-red-500" : "bg-purple-600"
-                }`}
+              className={`px-8 py-4 rounded-full shadow-lg ${
+                isMonitoring ? "bg-red-500" : "bg-purple-600"
+              }`}
               disabled={isInitializing}
             >
               <Text className="text-white font-semibold text-lg">
@@ -340,13 +373,15 @@ export default function Monitor() {
           {isMonitoring && (
             <View className="mb-4">
               <View className="flex-row items-center justify-center mb-3">
-                <View className={`w-3 h-3 rounded-full mr-2 ${faces.length > 0 ? "bg-green-500" : "bg-yellow-500"
-                  }`} />
+                <View
+                  className={`w-3 h-3 rounded-full mr-2 ${
+                    faces.length > 0 ? "bg-green-500" : "bg-yellow-500"
+                  }`}
+                />
                 <Text className="text-sm font-medium text-gray-700">
                   {faces.length > 0
                     ? `Face Detected (${(detectionConfidence * 100).toFixed(0)}% confidence)`
-                    : "Searching for face..."
-                  }
+                    : "Searching for face..."}
                 </Text>
               </View>
 
@@ -368,8 +403,7 @@ export default function Monitor() {
               <Text className="text-xs text-gray-500 text-center mt-2">
                 {faces.length > 0
                   ? "✓ Face tracking active with eye detection"
-                  : "⏳ Position your face in the frame"
-                }
+                  : "⏳ Position your face in the frame"}
               </Text>
             </View>
           )}
@@ -399,9 +433,12 @@ export default function Monitor() {
                 <Ionicons name="analytics" size={20} color="#8B5CF6" />
               </View>
               <View className="flex-1">
-                <Text className="font-semibold text-gray-900 mb-1">TensorFlow.js Detection</Text>
+                <Text className="font-semibold text-gray-900 mb-1">
+                  TensorFlow.js Detection
+                </Text>
                 <Text className="text-gray-600 text-sm leading-5">
-                  Uses BlazeFace model for accurate real-time face detection and landmark tracking
+                  Uses BlazeFace model for accurate real-time face detection and
+                  landmark tracking
                 </Text>
               </View>
             </View>
@@ -411,7 +448,9 @@ export default function Monitor() {
                 <Ionicons name="pulse" size={20} color="#22c55e" />
               </View>
               <View className="flex-1">
-                <Text className="font-semibold text-gray-900 mb-1">Blink Rate Analysis</Text>
+                <Text className="font-semibold text-gray-900 mb-1">
+                  Blink Rate Analysis
+                </Text>
                 <Text className="text-gray-600 text-sm leading-5">
                   Normal: 12-25 blinks/min • Low: &lt;12 may indicate eye strain
                 </Text>
@@ -423,9 +462,12 @@ export default function Monitor() {
                 <Ionicons name="shield-checkmark" size={20} color="#3b82f6" />
               </View>
               <View className="flex-1">
-                <Text className="font-semibold text-gray-900 mb-1">Privacy Protected</Text>
+                <Text className="font-semibold text-gray-900 mb-1">
+                  Privacy Protected
+                </Text>
                 <Text className="text-gray-600 text-sm leading-5">
-                  All processing happens locally on your device. No data is sent to servers
+                  All processing happens locally on your device. No data is sent
+                  to servers
                 </Text>
               </View>
             </View>
@@ -438,11 +480,21 @@ export default function Monitor() {
             Optimization Tips
           </Text>
           <View className="space-y-2">
-            <Text className="text-gray-700 text-sm">• Ensure bright, even lighting on your face</Text>
-            <Text className="text-gray-700 text-sm">• Keep your face centered and 30-60cm from camera</Text>
-            <Text className="text-gray-700 text-sm">• Remove glasses if they create glare or reflections</Text>
-            <Text className="text-gray-700 text-sm">• Sit still for more accurate detection</Text>
-            <Text className="text-gray-700 text-sm">• Clean your camera lens for better clarity</Text>
+            <Text className="text-gray-700 text-sm">
+              • Ensure bright, even lighting on your face
+            </Text>
+            <Text className="text-gray-700 text-sm">
+              • Keep your face centered and 30-60cm from camera
+            </Text>
+            <Text className="text-gray-700 text-sm">
+              • Remove glasses if they create glare or reflections
+            </Text>
+            <Text className="text-gray-700 text-sm">
+              • Sit still for more accurate detection
+            </Text>
+            <Text className="text-gray-700 text-sm">
+              • Clean your camera lens for better clarity
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -455,11 +507,11 @@ const styles = StyleSheet.create({
     width: CAMERA_WIDTH,
     height: CAMERA_HEIGHT,
     borderRadius: 16,
-    overflow: 'hidden',
-    alignSelf: 'center',
+    overflow: "hidden",
+    alignSelf: "center",
     borderWidth: 2,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
   },
   camera: {
     flex: 1,

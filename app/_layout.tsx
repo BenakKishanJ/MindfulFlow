@@ -14,8 +14,8 @@ function InitialLayout() {
   useEffect(() => {
     if (loading) return; // Don't do anything while loading
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
+    const inAuthGroup = segments[0] === "(auth)";
+    // const inTabsGroup = segments[0] === '(tabs)';
 
     if (currentUser && inAuthGroup) {
       // User is signed in but in auth group, redirect to main app
