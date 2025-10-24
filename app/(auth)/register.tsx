@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,7 +24,6 @@ export default function RegisterScreen() {
   const { signup } = useAuth();
 
   const handleSignup = async () => {
-    // Validation
     if (
       !displayName.trim() ||
       !email.trim() ||
@@ -33,26 +33,22 @@ export default function RegisterScreen() {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-
     if (!isValidEmail(email)) {
       Alert.alert("Error", "Please enter a valid email address");
       return;
     }
-
     if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long");
+      Alert.alert("Error", "Password must be at least 6 characters");
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match");
       return;
     }
-
     if (!isStrongPassword(password)) {
       Alert.alert(
         "Weak Password",
-        "Password should contain at least one uppercase letter, one lowercase letter, and one number",
+        "Password must contain uppercase, lowercase, and a number"
       );
       return;
     }
@@ -64,197 +60,143 @@ export default function RegisterScreen() {
         { text: "OK", onPress: () => router.replace("/(tabs)") },
       ]);
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
-      Alert.alert("Registration Failed", errorMessage);
+      Alert.alert("Registration Failed", getFirebaseErrorMessage(error.code));
     } finally {
       setLoading(false);
     }
   };
 
-  const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const isValidEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const isStrongPassword = (pw: string) =>
+    /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /\d/.test(pw);
+
+  const getFirebaseErrorMessage = (code: string) => {
+    const map: Record<string, string> = {
+      "auth/email-already-in-use": "This email is already in use.",
+      "auth/invalid-email": "Invalid email address.",
+      "auth/weak-password": "Password is too weak.",
+      "auth/network-request-failed": "Network error. Check your connection.",
+    };
+    return map[code] ?? "An unexpected error occurred.";
   };
-
-  const isStrongPassword = (password: string): boolean => {
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    return hasUppercase && hasLowercase && hasNumber;
-  };
-
-  const getFirebaseErrorMessage = (errorCode: string): string => {
-    switch (errorCode) {
-      case "auth/email-already-in-use":
-        return "An account with this email already exists.";
-      case "auth/invalid-email":
-        return "Invalid email address.";
-      case "auth/operation-not-allowed":
-        return "Account creation is currently disabled.";
-      case "auth/weak-password":
-        return "Password is too weak.";
-      case "auth/network-request-failed":
-        return "Network error. Please check your connection.";
-      default:
-        return "An error occurred during registration. Please try again.";
-    }
-  };
-
-  const getPasswordStrength = (): { text: string; color: string } => {
-    if (!password) return { text: "", color: "" };
-
-    const hasLength = password.length >= 6;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    const score = [
-      hasLength,
-      hasUppercase,
-      hasLowercase,
-      hasNumber,
-      hasSpecial,
-    ].filter(Boolean).length;
-
-    if (score < 2) return { text: "Weak", color: "text-red-500" };
-    if (score < 4) return { text: "Medium", color: "text-yellow-500" };
-    return { text: "Strong", color: "text-green-500" };
-  };
-
-  const passwordStrength = getPasswordStrength();
 
   return (
+
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: '#fff' }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 justify-center px-6 py-8">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Illustration */}
+        <View className="items-center pt-20 pb-0">
+          <Image
+            source={require("@/assets/images/auth-illustration.png")}
+            resizeMode="contain"
+            className="w-80 h-80"
+          />
+        </View>
+
+        <View className="px-8 flex-1 justify-center">
           {/* Header */}
-          <View className="mb-8">
-            <Text className="text-3xl font-bold text-gray-900 text-center mb-2">
-              Create Account
-            </Text>
-            <Text className="text-gray-600 text-center text-base">
-              Sign up to get started with your account
-            </Text>
+          <Text className="text-3xl font-bold text-center mb-2 text-black">
+            Register
+          </Text>
+          <Text className="text-base text-center text-gray-600 mb-8">
+            Create your account
+          </Text>
+
+          {/* Full Name */}
+          <View className="mb-6">
+            <TextInput
+              placeholder="Full Name"
+              placeholderTextColor="#9CA3AF"
+              value={displayName}
+              onChangeText={setDisplayName}
+              autoCapitalize="words"
+              className="border-b border-gray-300 pb-2 text-base"
+              editable={!loading}
+            />
           </View>
 
-          {/* Form */}
-          <View className="space-y-4">
-            {/* Display Name Input */}
-            <View>
-              <Text className="text-gray-700 text-sm font-medium mb-1">
-                Full Name
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 focus:bg-white focus:border-blue-500"
-                placeholder="Enter your full name"
-                value={displayName}
-                onChangeText={setDisplayName}
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
+          {/* Email */}
+          <View className="mb-6">
+            <TextInput
+              placeholder="Email Address"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              className="border-b border-gray-300 pb-2 text-base"
+              editable={!loading}
+            />
+          </View>
 
-            {/* Email Input */}
-            <View>
-              <Text className="text-gray-700 text-sm font-medium mb-1">
-                Email Address
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 focus:bg-white focus:border-blue-500"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
+          {/* Password */}
+          <View className="mb-6">
+            <TextInput
+              placeholder="Password (8-16 characters)"
+              placeholderTextColor="#9CA3AF"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              className="border-b border-gray-300 pb-2 text-base"
+              editable={!loading}
+            />
+          </View>
 
-            {/* Password Input */}
-            <View>
-              <Text className="text-gray-700 text-sm font-medium mb-1">
-                Password
+          {/* Confirm Password */}
+          <View className="mb-6">
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor="#9CA3AF"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              className="border-b border-gray-300 pb-2 text-base"
+              editable={!loading}
+            />
+            {confirmPassword && password !== confirmPassword && (
+              <Text className="text-xs mt-1 text-red-600">
+                Passwords do not match
               </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 focus:bg-white focus:border-blue-500"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-              {password && (
-                <Text className={`text-xs mt-1 ${passwordStrength.color}`}>
-                  Password strength: {passwordStrength.text}
-                </Text>
-              )}
-            </View>
+            )}
+          </View>
 
-            {/* Confirm Password Input */}
-            <View>
-              <Text className="text-gray-700 text-sm font-medium mb-1">
-                Confirm Password
+          {/* Submit */}
+          <TouchableOpacity
+            onPress={handleSignup}
+            disabled={loading}
+            className="bg-black rounded-full py-4 items-center"
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-semibold text-base">
+                Register
               </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 focus:bg-white focus:border-blue-500"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-              {confirmPassword && password !== confirmPassword && (
-                <Text className="text-xs mt-1 text-red-500">
-                  Passwords do not match
-                </Text>
-              )}
-            </View>
+            )}
+          </TouchableOpacity>
 
-            {/* Register Button */}
+          {/* Login link */}
+          <View className="flex-row justify-center mt-6">
+            <Text className="text-gray-600">Already have an account? </Text>
             <TouchableOpacity
-              className="bg-blue-600 rounded-lg py-3 mt-6"
-              onPress={handleSignup}
+              onPress={() => router.push("/(auth)/login")}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-center text-base font-semibold">
-                  Create Account
-                </Text>
-              )}
+              <Text className="text-lime-500 font-medium">Login</Text>
             </TouchableOpacity>
-
-            {/* Sign In Link */}
-            <View className="flex-row justify-center items-center mt-6">
-              <Text className="text-gray-600 text-base">
-                Already have an account?{" "}
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/(auth)/login")}
-                disabled={loading}>
-                <Text className="text-blue-600 font-semibold text-base">
-                  Sign In
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
-
-          {/* Terms and Privacy */}
-          <Text className="text-gray-500 text-xs text-center mt-8 px-4">
-            By creating an account, you agree to our Terms of Service and
-            Privacy Policy
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

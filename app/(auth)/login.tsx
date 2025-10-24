@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +26,6 @@ export default function LoginScreen() {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-
     if (!isValidEmail(email)) {
       Alert.alert("Error", "Please enter a valid email address");
       return;
@@ -36,8 +36,7 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace("/(tabs)");
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
-      Alert.alert("Login Failed", errorMessage);
+      Alert.alert("Login Failed", getFirebaseErrorMessage(error.code));
     } finally {
       setLoading(false);
     }
@@ -48,135 +47,123 @@ export default function LoginScreen() {
       Alert.alert("Error", "Please enter your email address first");
       return;
     }
-
     if (!isValidEmail(email)) {
       Alert.alert("Error", "Please enter a valid email address");
       return;
     }
-
     try {
       await resetPassword(email.trim());
       Alert.alert("Success", "Password reset email sent!");
     } catch (error: any) {
-      const errorMessage = getFirebaseErrorMessage(error.code);
-      Alert.alert("Error", errorMessage);
+      Alert.alert("Error", getFirebaseErrorMessage(error.code));
     }
   };
 
-  const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const isValidEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const getFirebaseErrorMessage = (errorCode: string): string => {
-    switch (errorCode) {
-      case "auth/user-not-found":
-        return "No account found with this email address.";
-      case "auth/wrong-password":
-        return "Incorrect password.";
-      case "auth/invalid-email":
-        return "Invalid email address.";
-      case "auth/user-disabled":
-        return "This account has been disabled.";
-      case "auth/too-many-requests":
-        return "Too many failed attempts. Please try again later.";
-      case "auth/network-request-failed":
-        return "Network error. Please check your connection.";
-      default:
-        return "An error occurred. Please try again.";
-    }
+  const getFirebaseErrorMessage = (code: string) => {
+    const map: Record<string, string> = {
+      "auth/user-not-found": "No account found with this email.",
+      "auth/wrong-password": "Incorrect password.",
+      "auth/invalid-email": "Invalid email address.",
+      "auth/user-disabled": "This account has been disabled.",
+      "auth/too-many-requests": "Too many failed attempts. Try again later.",
+      "auth/network-request-failed": "Network error. Check your connection.",
+    };
+    return map[code] ?? "An unexpected error occurred.";
   };
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: '#fff' }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 justify-center px-6">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Illustration */}
+        <View className="items-center pt-20 pb-0">
+          <Image
+            source={require("@/assets/images/auth-illustration.png")}
+            resizeMode="contain"
+            className="w-80 h-80"
+          />
+        </View>
+
+        <View className="px-8 flex-1 justify-center">
           {/* Header */}
-          <View className="mb-8">
-            <Text className="text-3xl font-bold text-gray-900 text-center mb-2">
-              Welcome Back
-            </Text>
-            <Text className="text-gray-600 text-center text-base">
-              Sign in to continue to your account
-            </Text>
+          <Text className="text-4xl font-bold text-center mb-5 text-black">
+            Login
+          </Text>
+          <Text className="text-base text-center text-gray-600 mb-8">
+            Sign in to your account
+          </Text>
+
+          {/* Email */}
+          <View className="mb-6">
+            <TextInput
+              placeholder="Email Address"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              className="border-b border-gray-300 pb-2 text-base"
+              editable={!loading}
+            />
           </View>
 
-          {/* Form */}
-          <View className="space-y-4">
-            {/* Email Input */}
-            <View>
-              <Text className="text-gray-700 text-sm font-medium mb-1">
-                Email Address
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 focus:bg-white focus:border-blue-500"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
+          {/* Password */}
+          <View className="mb-6">
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor="#9CA3AF"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              className="border-b border-gray-300 pb-2 text-base"
+              editable={!loading}
+            />
+          </View>
 
-            {/* Password Input */}
-            <View>
-              <Text className="text-gray-700 text-sm font-medium mb-1">
-                Password
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 focus:bg-white focus:border-blue-500"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
+          {/* Forgot password */}
+          <TouchableOpacity
+            onPress={handleForgotPassword}
+            disabled={loading}
+            className="self-end mb-6"
+          >
+            <Text className="text-sm text-black">Forgot Password?</Text>
+          </TouchableOpacity>
 
-            {/* Forgot Password */}
+          {/* Submit */}
+          <TouchableOpacity
+            onPress={handleLogin}
+            disabled={loading}
+            className="bg-black rounded-full py-4 items-center"
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-semibold text-base">
+                Login
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Register link */}
+          <View className="flex-row justify-center mt-6">
+            <Text className="text-gray-600">Don&apos;t have an account? </Text>
             <TouchableOpacity
-              onPress={handleForgotPassword}
-              disabled={loading}
-              className="self-end"
-            >
-              <Text className="text-blue-600 text-sm font-medium">
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
-
-            {/* Login Button */}
-            <TouchableOpacity
-              className="bg-blue-600 rounded-lg py-3 mt-6"
-              onPress={handleLogin}
+              onPress={() => router.push("/(auth)/register")}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-center text-base font-semibold">
-                  Sign In
-                </Text>
-              )}
+              <Text className="text-lime-500 font-medium">Sign Up</Text>
             </TouchableOpacity>
-
-            {/* Sign Up Link */}
-            <View className="flex-row justify-center items-center mt-6">
-              <Text className="text-gray-600 text-base">
-                Don&apos;t have an account?{" "}
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/(auth)/register")}
-                disabled={loading}>
-                <Text className="">Sign Up</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </ScrollView>
