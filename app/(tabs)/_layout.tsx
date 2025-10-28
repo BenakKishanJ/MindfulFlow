@@ -1,113 +1,149 @@
 // app/(tabs)/_layout.tsx
 import React from "react";
-import { Tabs } from "expo-router";
-import { TouchableOpacity, Alert } from "react-native";
+import { Tabs, useRouter } from "expo-router";
+import { View, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function TabLayout() {
-  const { logout, currentUser } = useAuth();
-
-  const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await logout();
-            console.log("Logged out user: ", currentUser);
-          } catch (error) {
-            console.error("Logout error:", error);
-            Alert.alert("Error", "Failed to sign out. Please try again.");
-          }
-        },
-      },
-    ]);
-  };
+  const router = useRouter();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: "#3b82f6",
-        tabBarInactiveTintColor: "#6b7280",
-        tabBarStyle: {
-          backgroundColor: "white",
-          borderTopColor: "#e5e7eb",
-        },
-        headerStyle: {
-          backgroundColor: "#3b82f6",
-        },
-        headerTintColor: "white",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Monitor",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pulse" size={size} color={color} />
-          ),
+    <View className="flex-1 bg-white">
+      {/* === TAB CONTENT === */}
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+          tabBarStyle: {
+            backgroundColor: "#000",
+            borderTopWidth: 0,
+            height: 80,
+            paddingBottom: 30,
+            paddingTop: 10,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          tabBarItemStyle: {
+            justifyContent: "center",
+            alignItems: "center",
+          },
         }}
-      />
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="analytics" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="chatbot"
-        options={{
-          title: "ChatBot",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
-          ),
-        }}
-      />
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="pulse-outline" focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="dashboard"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="analytics-outline" focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="exercises"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="fitness-outline" focused={focused} />
+            ),
+          }}
+        />
+        {/* <Tabs.Screen */}
+        {/*   name="chatbot" */}
+        {/*   options={{ */}
+        {/*     tabBarIcon: ({ focused }) => ( */}
+        {/*       <TabIcon icon="chatbubble-ellipses-outline" focused={focused} /> */}
+        {/*     ), */}
+        {/*   }} */}
+        {/* /> */}
+        <Tabs.Screen
+          name="insights"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="bulb-outline" focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="person-outline" focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="settings-outline" focused={focused} />
+            ),
+          }}
+        />
+      </Tabs>
 
-      <Tabs.Screen
-        name="insights"
-        options={{
-          title: "Insights",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bulb" size={size} color={color} />
-          ),
-        }}
+      {/* === FLOATING ACTION BUTTON (FAB) === */}
+      <FAB onPress={() => router.push("/(pages)/chatbot")} />
+    </View>
+  );
+}
+
+// === TAB ICON WITH LIME DOT ===
+function TabIcon({ icon, focused }: { icon: any; focused: boolean }) {
+  return (
+    <View className="items-center justify-center relative">
+      <Ionicons
+        name={icon}
+        size={26}
+        color={focused ? "#A3E635" : "#CACACA"}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="log-out-outline" size={24} color="white" />
-            </TouchableOpacity>
-          ),
+      {focused && (
+        <View
+          className="absolute -bottom-3 w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: "#A3E635" }}
+        />
+      )}
+    </View>
+  );
+}
+
+// === FLOATING ACTION BUTTON (FAB) ===
+function FAB({ onPress }: { onPress: () => void }) {
+  return (
+    <View className="absolute bottom-24 right-6 z-50">
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        className="w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-black/40 bg-white border-2 border-black"
+        style={{
+          // Lime background on press
+          backgroundColor: undefined,
         }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
+        // Inline press style override
+        onPressIn={(e) => {
+          (e.currentTarget as any).setNativeProps({
+            style: { backgroundColor: "#A3E635", borderColor: "#A3E635" },
+          });
         }}
-      />
-    </Tabs>
+        onPressOut={(e) => {
+          (e.currentTarget as any).setNativeProps({
+            style: { backgroundColor: "#FFFFFF", borderColor: "#000000" },
+          });
+        }}
+      >
+        <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-black">
+          <Image
+            source={require("@/assets/images/ai-profile.jpg")}
+            className="w-full h-full"
+            resizeMode="cover"
+          />
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
