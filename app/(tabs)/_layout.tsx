@@ -115,7 +115,7 @@ function TabIcon({ icon, focused }: { icon: any; focused: boolean }) {
 // === FLOATING ACTION BUTTON (FAB) ===
 function FAB({ onPress }: { onPress: () => void }) {
   return (
-    <View className="absolute bottom-24 right-6 z-50">
+    <View className="absolute bottom-36 right-10 z-50">
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.8}
@@ -136,9 +136,10 @@ function FAB({ onPress }: { onPress: () => void }) {
           });
         }}
       >
-        <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-black">
+        {/* <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-black"> */}
+        <View className="w-28 h-28 rounded-full overflow-hidden">
           <Image
-            source={require("@/assets/images/ai-profile.jpg")}
+            source={require("@/assets/images/ai_coach.png")}
             className="w-full h-full"
             resizeMode="cover"
           />

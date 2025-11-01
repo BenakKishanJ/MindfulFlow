@@ -1,9 +1,14 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useScreenTime } from "@/contexts/ScreenTimeContext";
+import { useResponsiveActions } from "@/contexts/ResponsiveActionsContext";
 
 export default function Settings() {
+  const { limits, updateLimits } = useScreenTime();
+  const { appBlockConfig, eyeCareConfig, greyscaleConfig, breakReminderConfig, updateAppBlockConfig, updateEyeCareConfig, updateGreyscaleConfig, updateBreakReminderConfig } = useResponsiveActions();
+
   const [settings, setSettings] = useState({
     notifications: {
       breakReminders: true,
@@ -35,6 +40,28 @@ export default function Settings() {
       fontSize: "Medium",
     },
   });
+
+  // Screen time limits state
+  const [screenTimeLimits, setScreenTimeLimits] = useState({
+    dailyLimit: limits?.dailyLimit || 480,
+    breakInterval: limits?.breakInterval || 30,
+    warningThreshold: limits?.warningThreshold || 80,
+    autoBlockEnabled: limits?.autoBlockEnabled || false,
+    eyeCareModeEnabled: limits?.eyeCareModeEnabled || false,
+  });
+
+  // Update screen time limits when context changes
+  useEffect(() => {
+    if (limits) {
+      setScreenTimeLimits({
+        dailyLimit: limits.dailyLimit,
+        breakInterval: limits.breakInterval,
+        warningThreshold: limits.warningThreshold,
+        autoBlockEnabled: limits.autoBlockEnabled,
+        eyeCareModeEnabled: limits.eyeCareModeEnabled,
+      });
+    }
+  }, [limits]);
 
   const updateSetting = (category: string, key: string, value: any) => {
     setSettings(prev => ({
@@ -177,7 +204,7 @@ export default function Settings() {
         {/* Header */}
         <View className="flex-row items-center justify-between mb-8">
           <View>
-            <Text className="text-3xl font-bold text-gray-900 mb-2">
+            <Text className="text-3xl font-ppmori-semibold text-gray-900 mb-2">
               Settings
             </Text>
             <Text className="text-gray-600">
@@ -345,6 +372,156 @@ export default function Settings() {
           />
         </SettingsSection>
 
+        {/* Screen Time Limits */}
+        <SettingsSection title="Screen Time Limits">
+          <View className="p-4 border-b border-gray-100">
+            <Text className="text-gray-900 font-medium mb-2">Daily Screen Time Limit</Text>
+            <Text className="text-gray-500 text-sm mb-3">
+              Set your maximum daily screen time in minutes
+            </Text>
+            <TextInput
+              value={Math.floor(screenTimeLimits.dailyLimit / 60).toString()}
+              onChangeText={(value) => {
+                const hours = parseInt(value) || 0;
+                setScreenTimeLimits(prev => ({ ...prev, dailyLimit: hours * 60 }));
+              }}
+              placeholder="8"
+              keyboardType="numeric"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-center w-20"
+            />
+            <Text className="text-xs text-gray-500 mt-1">hours per day</Text>
+          </View>
+
+          <View className="p-4 border-b border-gray-100">
+            <Text className="text-gray-900 font-medium mb-2">Break Interval</Text>
+            <Text className="text-gray-500 text-sm mb-3">
+              How often to remind you to take breaks
+            </Text>
+            <TextInput
+              value={screenTimeLimits.breakInterval.toString()}
+              onChangeText={(value) => {
+                const minutes = parseInt(value) || 30;
+                setScreenTimeLimits(prev => ({ ...prev, breakInterval: minutes }));
+              }}
+              placeholder="30"
+              keyboardType="numeric"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-center w-20"
+            />
+            <Text className="text-xs text-gray-500 mt-1">minutes</Text>
+          </View>
+
+          <ToggleItem
+            icon="shield-checkmark-outline"
+            title="Auto Block Apps"
+            subtitle="Automatically block distracting apps when limit is reached"
+            value={screenTimeLimits.autoBlockEnabled}
+            onValueChange={(value: boolean) => {
+              setScreenTimeLimits(prev => ({ ...prev, autoBlockEnabled: value }));
+              updateLimits({ autoBlockEnabled: value });
+            }}
+          />
+
+          <ToggleItem
+            icon="eye-outline"
+            title="Eye Care Mode"
+            subtitle="Automatically enable eye protection when needed"
+            value={screenTimeLimits.eyeCareModeEnabled}
+            onValueChange={(value: boolean) => {
+              setScreenTimeLimits(prev => ({ ...prev, eyeCareModeEnabled: value }));
+              updateLimits({ eyeCareModeEnabled: value });
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={() => updateLimits(screenTimeLimits)}
+            className="bg-blue-600 rounded-2xl py-3 mx-4 mb-4"
+          >
+            <Text className="text-white text-center font-semibold">
+              Save Screen Time Settings
+            </Text>
+          </TouchableOpacity>
+        </SettingsSection>
+
+        {/* Responsive Actions */}
+        <SettingsSection title="Responsive Actions">
+          <View className="p-4 border-b border-gray-100">
+            <Text className="text-gray-900 font-medium mb-2">App Blocking</Text>
+            <Text className="text-gray-500 text-sm mb-3">
+              Duration to block apps when triggered
+            </Text>
+            <TextInput
+              value={(appBlockConfig?.blockDuration || 15).toString()}
+              onChangeText={(value) => {
+                const duration = parseInt(value) || 15;
+                updateAppBlockConfig({ blockDuration: duration });
+              }}
+              placeholder="15"
+              keyboardType="numeric"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-center w-20"
+            />
+            <Text className="text-xs text-gray-500 mt-1">minutes</Text>
+          </View>
+
+          <ToggleItem
+            icon="key-outline"
+            title="Emergency Access"
+            subtitle="Allow emergency unblocking with a code"
+            value={appBlockConfig?.allowEmergencyAccess || true}
+            onValueChange={(value: boolean) => updateAppBlockConfig({ allowEmergencyAccess: value })}
+          />
+
+          <View className="p-4 border-b border-gray-100">
+            <Text className="text-gray-900 font-medium mb-2">Eye Care Brightness</Text>
+            <Text className="text-gray-500 text-sm mb-3">
+              Automatic brightness adjustment level (0-1)
+            </Text>
+            <TextInput
+              value={(eyeCareConfig?.brightnessLevel || 0.8).toString()}
+              onChangeText={(value) => {
+                const level = Math.max(0.1, Math.min(1, parseFloat(value) || 0.8));
+                updateEyeCareConfig({ brightnessLevel: level });
+              }}
+              placeholder="0.8"
+              keyboardType="numeric"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-center w-20"
+            />
+          </View>
+
+          <ToggleItem
+            icon="color-filter-outline"
+            title="Blue Light Filter"
+            subtitle="Reduce blue light emission for eye comfort"
+            value={eyeCareConfig?.blueLightFilter || false}
+            onValueChange={(value: boolean) => updateEyeCareConfig({ blueLightFilter: value })}
+          />
+
+          <ToggleItem
+            icon="contrast-outline"
+            title="Greyscale Mode"
+            subtitle="Convert screen to greyscale to reduce stimulation"
+            value={greyscaleConfig?.intensity ? greyscaleConfig.intensity > 0 : false}
+            onValueChange={(value: boolean) => updateGreyscaleConfig({ intensity: value ? 0.5 : 0 })}
+          />
+
+          <View className="p-4">
+            <Text className="text-gray-900 font-medium mb-2">Break Reminder Sound</Text>
+            <ToggleItem
+              icon="volume-high-outline"
+              title="Enable Sound"
+              subtitle="Play sound with break reminders"
+              value={breakReminderConfig?.soundEnabled || true}
+              onValueChange={(value: boolean) => updateBreakReminderConfig({ soundEnabled: value })}
+            />
+            <ToggleItem
+              icon="phone-portrait-outline"
+              title="Enable Vibration"
+              subtitle="Vibrate device for break reminders"
+              value={breakReminderConfig?.vibrationEnabled || true}
+              onValueChange={(value: boolean) => updateBreakReminderConfig({ vibrationEnabled: value })}
+            />
+          </View>
+        </SettingsSection>
+
         {/* Appearance Settings */}
         <SettingsSection title="Appearance">
           <ToggleItem
@@ -438,7 +615,7 @@ export default function Settings() {
             <View className="border-t border-gray-200 pt-3">
               <View className="flex-row justify-between items-center">
                 <Text className="text-gray-900 font-semibold">Total</Text>
-                <Text className="text-gray-900 font-bold">186.0 MB</Text>
+                <Text className="text-gray-900 font-ppmori-semibold">186.0 MB</Text>
               </View>
             </View>
           </View>

@@ -137,26 +137,24 @@ const MentalHealthChatbot = () => {
   // === MAIN UI ===
   return (
     <SafeAreaView className="flex-1 bg-white">
-
       {/* === FLOATING BACK BUTTON === */}
       <TouchableOpacity
         onPress={() => router.back()}
-        className="absolute top-14 left-6 w-10 h-10 border border-black items-center justify-center bg-white"
-        style={{ zIndex: 10 }}
-      >
+        className="absolute top-14 left-6 w-11 h-11 rounded-full border border-gray-300 items-center justify-center bg-white shadow-sm"
+        style={{ zIndex: 10 }}>
         <Text className="text-black text-xl font-bold">←</Text>
       </TouchableOpacity>
 
       <ScrollView
         ref={scrollViewRef}
         className="flex-1 px-6"
-        contentContainerStyle={{ paddingTop: 24, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: 24, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         {/* === WELCOME HEADING (Only on empty chat) === */}
         {messages.length === 0 && (
-          <View className="mb-8">
-            <Text className="text-black font-bold text-3xl text-center mb-3">
+          <View className="mb-10 items-center">
+            <Text className="text-black font-bold text-3xl text-center mb-2">
               Mindful AI
             </Text>
             <Text className="text-gray-600 font-medium text-base text-center">
@@ -172,9 +170,9 @@ const MentalHealthChatbot = () => {
             className={`my-3 flex-row ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <View
-              className={`max-w-[82%] px-4 py-3 border ${msg.sender === 'user'
+              className={`max-w-[82%] px-4 py-3 rounded-2xl border ${msg.sender === 'user'
                 ? 'bg-black border-black'
-                : 'bg-white border-gray-300'
+                : 'bg-white border-gray-300 shadow-sm'
                 }`}
             >
               <Text
@@ -199,7 +197,7 @@ const MentalHealthChatbot = () => {
         {/* === LOADING === */}
         {isLoading && (
           <View className="flex-row justify-start my-3">
-            <View className="bg-white border border-gray-300 px-4 py-3">
+            <View className="bg-white border border-gray-300 px-4 py-3 rounded-2xl shadow-sm">
               <ActivityIndicator size="small" color="#000" />
             </View>
           </View>
@@ -207,7 +205,7 @@ const MentalHealthChatbot = () => {
 
         {/* === QUICK SUGGESTIONS === */}
         {messages.length > 0 && !isLoading && (
-          <View className="mt-6">
+          <View className="mt-8">
             <Text className="text-gray-600 font-medium text-sm mb-3">
               Try asking:
             </Text>
@@ -216,11 +214,9 @@ const MentalHealthChatbot = () => {
                 <TouchableOpacity
                   key={i}
                   onPress={() => handleQuickSuggestion(tip)}
-                  className="border border-gray-300 px-4 py-2"
+                  className="border border-gray-300 px-4 py-2 rounded-xl bg-white shadow-sm"
                 >
-                  <Text className="text-black font-medium text-sm">
-                    {tip}
-                  </Text>
+                  <Text className="text-black font-medium text-sm">{tip}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -231,12 +227,13 @@ const MentalHealthChatbot = () => {
       {/* === INPUT BAR === */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="border-t border-gray-200"
       >
-        <View className="bg-white px-6 py-4 border-t border-gray-300">
+        <View className="bg-white px-6 py-4">
           <View className="flex-row items-center gap-3">
-            {/* Rectangular Input */}
+            {/* Rounded Input */}
             <TextInput
-              className="flex-1 bg-white border border-black px-4 py-3 font-medium text-black placeholder-gray-500"
+              className="flex-1 bg-white border border-gray-300 px-4 py-3 rounded-xl font-medium text-black placeholder-gray-500 shadow-sm"
               placeholder="Ask about eye care, posture..."
               value={inputText}
               onChangeText={setInputText}
@@ -244,25 +241,26 @@ const MentalHealthChatbot = () => {
               maxLength={500}
               style={{ minHeight: 48, textAlignVertical: 'center' }}
             />
-
-            {/* Square Send Button */}
+            {/* Rounded Send Button */}
             <TouchableOpacity
               onPress={handleSendMessage}
               disabled={isLoading || !inputText.trim()}
-              className={`w-12 h-12 border-2 items-center justify-center ${inputText.trim()
+              className={`w-12 h-12 rounded-xl border-2 items-center justify-center shadow-sm transition-all ${inputText.trim()
                 ? 'bg-lime-400 border-lime-400'
-                : 'border-gray-400 bg-white'
+                : 'border-gray-300 bg-white'
                 }`}
             >
-              <Text className={`font-bold text-lg ${inputText.trim() ? 'text-black' : 'text-gray702'}`}>
+              <Text
+                className={`font-bold text-lg ${inputText.trim() ? 'text-black' : 'text-gray-400'
+                  }`}
+              >
                 ↑
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+    </SafeAreaView>);
 };
 
 export default MentalHealthChatbot;

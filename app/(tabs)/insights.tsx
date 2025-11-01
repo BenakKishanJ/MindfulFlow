@@ -121,7 +121,7 @@ export default function Insights() {
         {/* Header */}
         <View className="flex-row items-center justify-between mb-6">
           <View>
-            <Text className="text-3xl font-bold text-gray-900 mb-2">
+            <Text className="text-3xl font-ppmori-semibold text-gray-900 mb-2">
               Insights
             </Text>
             <Text className="text-gray-600">
@@ -180,7 +180,7 @@ export default function Insights() {
 
               <View className="flex-row items-center mb-6">
                 <View className="bg-purple-100 p-4 rounded-full mr-4">
-                  <Text className="text-2xl font-bold text-purple-600">
+                  <Text className="text-2xl font-ppmori-semibold text-purple-600">
                     {dailySummary.overallScore}
                   </Text>
                 </View>

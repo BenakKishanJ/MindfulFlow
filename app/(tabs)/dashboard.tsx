@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useScreenTime } from "@/contexts/ScreenTimeContext";
 
 export default function Dashboard() {
+  const { todayData, stats, isLoading, error } = useScreenTime();
   const [selectedPeriod, setSelectedPeriod] = useState("Today");
+
+  // Mock data for now until we have full weekly data
   const [weeklyData] = useState({
     eyeStrain: [12, 8, 15, 6, 18, 22, 14],
     postureScore: [85, 78, 92, 88, 76, 82, 89],
@@ -12,23 +16,50 @@ export default function Dashboard() {
     sessionTime: [6.5, 8.2, 4.3, 9.1, 7.8, 5.9, 7.2],
   });
 
+  // Convert screen time minutes to hours and minutes format
+  const formatScreenTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
+
+  // Use real data if available, fallback to defaults
   const todayStats = {
-    totalScreenTime: "7h 24m",
-    eyeStrainEvents: 14,
-    postureScore: 89,
-    breaksTaken: 5,
-    wellnessScore: 84,
+    totalScreenTime: todayData ? formatScreenTime(todayData.totalScreenTime) : "0h 0m",
+    eyeStrainEvents: todayData?.wellnessScore ? Math.round((100 - todayData.wellnessScore) * 0.2) : 0,
+    postureScore: todayData?.wellnessScore || 85,
+    breaksTaken: todayData?.sessions.length || 0,
+    wellnessScore: todayData?.wellnessScore || 85,
   };
 
   const weeklyAverage = {
-    screenTime: "6h 52m",
+    screenTime: stats ? formatScreenTime(stats.weeklyAverage) : "0h 0m",
     eyeStrain: 13.6,
     posture: 84.3,
     breaks: 4.6,
-    wellness: 82,
+    wellness: stats?.weeklyAverage ? Math.max(70, 100 - (stats.weeklyAverage / 60) * 10) : 82,
   };
 
   const periods = ["Today", "This Week", "This Month"];
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+        <Text className="text-lg text-gray-600">Loading dashboard...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+        <Text className="text-lg text-red-600 mb-4">Error loading dashboard</Text>
+        <Text className="text-sm text-gray-600">{error}</Text>
+      </SafeAreaView>
+    );
+  }
 
   const getWellnessColor = (score: number) => {
     if (score >= 80) return "text-green-600";
@@ -67,7 +98,7 @@ export default function Dashboard() {
           </View>
         )}
       </View>
-      <Text className="text-2xl font-bold text-gray-900 mb-1">{value}</Text>
+      <Text className="text-2xl font-ppmori-semibold text-gray-900 mb-1">{value}</Text>
       <Text className="text-gray-600 text-sm">{title}</Text>
       {subtitle && (
         <Text className="text-gray-500 text-xs mt-1">{subtitle}</Text>
@@ -96,7 +127,7 @@ export default function Dashboard() {
         {/* Header */}
         <View className="flex-row items-center justify-between mb-6">
           <View>
-            <Text className="text-3xl font-bold text-gray-900 mb-2">
+            <Text className="text-3xl font-ppmori-semibold text-gray-900 mb-2">
               Dashboard
             </Text>
             <Text className="text-gray-600">

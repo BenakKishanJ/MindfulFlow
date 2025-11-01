@@ -201,7 +201,7 @@ export default function Monitor() {
       <ScrollView className="flex-1 px-4 py-6">
         {/* Header */}
         <View className="mb-8">
-          <Text className="text-3xl font-bold text-gray-900 mb-2">
+          <Text className="text-3xl font-ppmori-semibold text-gray-900 mb-2">
             Blink Rate Monitor
           </Text>
           <Text className="text-gray-600">
@@ -310,7 +310,7 @@ export default function Monitor() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
