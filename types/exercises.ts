@@ -1,53 +1,50 @@
+// types/exercises.ts
+
 export type ExerciseType = 'eye' | 'posture' | 'breathing' | 'break';
 
-export type ExerciseDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
+/**
+ * A single timed step in an exercise.
+ * - `duration`: seconds the step lasts (excluding transition)
+ * - `image`: optional – if omitted, the previous step’s image is used
+ */
+export interface Step {
+  title: string;
+  duration: number;           // seconds
+  image?: any;                // require('@/assets/...') – React Native Image source
+}
+
+/**
+ * Full exercise definition
+ */
 export interface Exercise {
   id: string;
   title: string;
   description: string;
   type: ExerciseType;
-  difficulty: ExerciseDifficulty;
-  duration: number; // seconds
+  difficulty: Difficulty;
+
+  /** Timed, sequential steps (with per-step duration & optional image) */
+  steps: Step[];
+
+  /** General guidelines / notes – shown *before* starting */
   instructions: string[];
+
+  /** Benefits – displayed in the exercise card preview */
   benefits: string[];
-  imageUrl?: string;
-  audioUrl?: string;
+
   tags: string[];
 }
 
-export interface ExerciseSession {
-  id: string;
-  exerciseId: string;
-  startedAt: Date;
-  completedAt?: Date;
-  duration: number; // actual duration in seconds
-  rating?: number; // 1-5 user satisfaction rating
-  notes?: string;
-}
-
-export interface TwentyTwentyTimer {
-  isActive: boolean;
-  timeRemaining: number; // seconds
-  totalDuration: number; // 20 seconds
-  currentPhase: 'looking' | 'resting';
-  completedCycles: number;
-}
-
-export interface ExerciseProgress {
-  totalSessions: number;
-  totalTime: number; // minutes
-  favoriteExercises: string[];
-  weeklyGoal: number; // sessions per week
-  currentWeekProgress: number;
-  streakDays: number;
-}
-
+/**
+ * Category metadata – used for filtering & UI
+ */
 export interface ExerciseCategory {
-  id: string;
+  id: ExerciseType;
   name: string;
   description: string;
-  icon: string;
-  color: string;
-  exercises: Exercise[];
+  icon: string;               // Ionicons name
+  color: string;              // Tailwind/hex color
+  exercises: Exercise[];      // filtered list (populated in data file)
 }

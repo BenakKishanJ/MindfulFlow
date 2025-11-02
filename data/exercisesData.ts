@@ -1,245 +1,358 @@
-import { Exercise, ExerciseCategory } from '../types/exercises';
+// data/exercisesData.ts
+import { Exercise, ExerciseCategory, ExerciseType } from '@/types/exercises';
 
+// -----------------------------------------------------------------------------
+// Helper: placeholder images (you can replace these with real assets later)
+// -----------------------------------------------------------------------------
+const IMG = {
+  placeholder: require('@/assets/images/exercises/placeholder.png'),
+
+  // Eye exercises
+  eye_20_20_20: require('@/assets/images/exercises/eye_20_20_20.png'),
+  eye_palming_cover: require('@/assets/images/exercises/eye_palming_cover.png'),
+  eye_palming_breathe: require('@/assets/images/exercises/eye_palming_breathe.png'),
+  eye_figure_eight: require('@/assets/images/exercises/eye_figure_eight.png'),
+
+  // Posture exercises
+  posture_neck_roll: require('@/assets/images/exercises/posture_neck_roll.png'),
+  posture_shoulder_shrug: require('@/assets/images/exercises/posture_shoulder_shrug.png'),
+  posture_cat_cow_cow: require('@/assets/images/exercises/posture_cat_cow_cow.png'),
+  posture_cat_cow_cat: require('@/assets/images/exercises/posture_cat_cow_cat.png'),
+
+  // Breathing exercises
+  breathing_4_7_8: require('@/assets/images/exercises/breathing_4_7_8.png'),
+  breathing_box: require('@/assets/images/exercises/breathing_box.png'),
+
+  // Break activities
+  break_walk: require('@/assets/images/exercises/break_walk.png'),
+  break_hydration: require('@/assets/images/exercises/break_hydration.png'),
+};
+
+// -----------------------------------------------------------------------------
+// EXERCISE DATA
+// -----------------------------------------------------------------------------
 export const exercisesData: Exercise[] = [
-  // Eye Exercises
+  // -------------------------------------------------------------------------
+  // EYE EXERCISES
+  // -------------------------------------------------------------------------
   {
     id: 'eye_20_20_20',
     title: '20-20-20 Rule',
     description: 'Look at something 20 feet away for 20 seconds every 20 minutes',
     type: 'eye',
     difficulty: 'beginner',
-    duration: 20,
+    steps: [
+      {
+        title: 'Look 20 feet away',
+        duration: 20,
+        image: IMG.eye_20_20_20,
+      },
+    ],
     instructions: [
-      'Set a timer for 20 seconds',
-      'Find an object 20 feet (6 meters) away',
-      'Focus on that object without blinking',
-      'Blink normally when the timer ends',
-      'Return to your work'
+      'Find an object at least 20 feet (6 meters) away.',
+      'Avoid blinking if possible – let your eyes relax.',
+      'Use this break every 20 minutes of screen time.',
     ],
     benefits: [
       'Reduces eye strain',
       'Prevents dry eyes',
       'Maintains visual focus',
-      'Breaks prolonged screen time'
+      'Breaks prolonged screen time',
     ],
-    tags: ['prevention', 'quick', 'daily']
+    tags: ['prevention', 'quick', 'daily'],
   },
+
   {
     id: 'eye_palming',
     title: 'Palming',
     description: 'Relax your eyes by covering them with your palms',
     type: 'eye',
     difficulty: 'beginner',
-    duration: 60,
+    steps: [
+      {
+        title: 'Rub hands & cover eyes',
+        duration: 40,
+        image: IMG.eye_palming_cover,
+      },
+      {
+        title: 'Breathe deeply & relax',
+        duration: 15,
+        image: IMG.eye_palming_breathe,
+      },
+      {
+        title: 'Remove palms & blink',
+        duration: 5,
+        image: IMG.eye_palming_breathe,
+      },
+    ],
     instructions: [
-      'Rub your hands together to warm them',
-      'Close your eyes gently',
-      'Place your palms over your eyes',
-      'Ensure no light enters',
-      'Breathe deeply and relax',
-      'Remove palms and blink gently'
+      'Ensure no light leaks through your palms.',
+      'Keep shoulders relaxed and breathe slowly.',
+      'Do this in a quiet, dimly lit space for best effect.',
     ],
     benefits: [
       'Relieves eye tension',
       'Reduces stress',
       'Improves blood circulation',
-      'Helps with dry eyes'
+      'Helps with dry eyes',
     ],
-    tags: ['relaxation', 'stress-relief', 'circulation']
+    tags: ['relaxation', 'stress-relief', 'circulation'],
   },
+
   {
     id: 'eye_figure_eight',
     title: 'Figure Eight',
     description: 'Follow an imaginary figure eight with your eyes',
     type: 'eye',
     difficulty: 'intermediate',
-    duration: 30,
+    steps: [
+      {
+        title: 'Trace clockwise',
+        duration: 15,
+        image: IMG.eye_figure_eight,
+      },
+      {
+        title: 'Trace counterclockwise',
+        duration: 15,
+        image: IMG.eye_figure_eight,
+      },
+    ],
     instructions: [
-      'Imagine a large figure eight on the wall',
-      'Follow the pattern with your eyes',
-      'Keep your head still',
-      'Go clockwise for 15 seconds',
-      'Go counterclockwise for 15 seconds',
-      'Blink and relax'
+      'Keep your head completely still.',
+      'Imagine a large horizontal figure-eight about 3 feet in front of you.',
+      'Move only your eyes, not your neck.',
     ],
     benefits: [
       'Improves eye coordination',
       'Strengthens eye muscles',
       'Reduces eye fatigue',
-      'Enhances focus flexibility'
+      'Enhances focus flexibility',
     ],
-    tags: ['coordination', 'strength', 'flexibility']
+    tags: ['coordination', 'strength', 'flexibility'],
   },
 
-  // Posture Exercises
+  // -------------------------------------------------------------------------
+  // POSTURE EXERCISES
+  // -------------------------------------------------------------------------
   {
     id: 'posture_neck_roll',
     title: 'Neck Rolls',
     description: 'Gently roll your neck to release tension',
     type: 'posture',
     difficulty: 'beginner',
-    duration: 45,
+    steps: [
+      {
+        title: 'Roll clockwise (5 circles)',
+        duration: 25,
+        image: IMG.posture_neck_roll,
+      },
+      {
+        title: 'Roll counterclockwise (5 circles)',
+        duration: 25,
+        image: IMG.posture_neck_roll,
+      },
+    ],
     instructions: [
-      'Sit or stand with good posture',
-      'Slowly roll your head clockwise',
-      'Complete 5 full circles',
-      'Switch to counterclockwise',
-      'Complete 5 more circles',
-      'Return to center position'
+      'Move slowly to avoid dizziness.',
+      'Stop immediately if you feel pain.',
+      'Breathe deeply throughout.',
     ],
     benefits: [
       'Releases neck tension',
       'Improves neck mobility',
       'Reduces headache risk',
-      'Better blood flow'
+      'Better blood flow',
     ],
-    tags: ['mobility', 'tension-relief', 'headache-prevention']
+    tags: ['mobility', 'tension-relief', 'headache-prevention'],
   },
+
   {
     id: 'posture_shoulder_shrug',
     title: 'Shoulder Shrugs',
     description: 'Lift and release your shoulders to relieve tension',
     type: 'posture',
     difficulty: 'beginner',
-    duration: 30,
+    steps: [
+      {
+        title: 'Lift, hold, release (10 reps)',
+        duration: 45,
+        image: IMG.posture_shoulder_shrug,
+      },
+    ],
     instructions: [
-      'Sit or stand comfortably',
-      'Inhale and lift both shoulders up',
-      'Hold for 3 seconds',
-      'Exhale and release shoulders down',
-      'Repeat 10 times',
-      'Shake out arms gently'
+      'Inhale as you lift, exhale as you drop.',
+      'Keep arms relaxed at your sides.',
+      'Do not force the shrug – go only to comfort.',
     ],
     benefits: [
       'Relieves shoulder tension',
       'Improves posture awareness',
       'Reduces stress',
-      'Better shoulder mobility'
+      'Better shoulder mobility',
     ],
-    tags: ['tension-relief', 'stress-relief', 'mobility']
+    tags: ['tension-relief', 'stress-relief', 'mobility'],
   },
+
   {
     id: 'posture_cat_cow',
     title: 'Cat-Cow Stretch',
     description: 'Alternate between arching and rounding your back',
     type: 'posture',
     difficulty: 'intermediate',
-    duration: 60,
+    steps: [
+      {
+        title: 'Cow pose (inhale)',
+        duration: 30,
+        image: IMG.posture_cat_cow_cow,
+      },
+      {
+        title: 'Cat pose (exhale)',
+        duration: 30,
+        image: IMG.posture_cat_cow_cat,
+      },
+    ],
     instructions: [
-      'Start on hands and knees',
-      'Inhale, arch back, lift head (Cow)',
-      'Exhale, round back, tuck chin (Cat)',
-      'Alternate slowly for 30 seconds',
-      'Return to neutral position',
-      'Sit back on heels to rest'
+      'Stay on all fours with wrists under shoulders, knees under hips.',
+      'Move slowly and sync breath with motion.',
+      'Keep neck neutral – don’t crank it up or down.',
     ],
     benefits: [
       'Improves spinal flexibility',
       'Relieves back tension',
       'Better posture alignment',
-      'Stress reduction'
+      'Stress reduction',
     ],
-    tags: ['flexibility', 'back-health', 'alignment']
+    tags: ['flexibility', 'back-health', 'alignment'],
   },
 
-  // Breathing Exercises
+  // -------------------------------------------------------------------------
+  // BREATHING EXERCISES
+  // -------------------------------------------------------------------------
   {
     id: 'breathing_4_7_8',
     title: '4-7-8 Breathing',
     description: 'Calm your nervous system with rhythmic breathing',
     type: 'breathing',
     difficulty: 'intermediate',
-    duration: 60,
+    steps: [
+      {
+        title: 'Inhale (4s) → Hold (7s) → Exhale (8s)',
+        duration: 19,
+        image: IMG.breathing_4_7_8,
+      },
+      {
+        title: 'Repeat cycle ×3',
+        duration: 57,
+        image: IMG.breathing_4_7_8,
+      },
+    ],
     instructions: [
-      'Inhale quietly through nose for 4 seconds',
-      'Hold breath for 7 seconds',
-      'Exhale completely through mouth for 8 seconds',
-      'Repeat cycle 4 times',
-      'Focus on the rhythm',
-      'Notice the calming effect'
+      'Sit comfortably with a straight back.',
+      'Exhale completely through the mouth to start.',
+      'Use a soft “whoosh” sound when exhaling.',
     ],
     benefits: [
       'Reduces anxiety and stress',
       'Improves sleep quality',
       'Lowers heart rate',
-      'Enhances focus and concentration'
+      'Enhances focus and concentration',
     ],
-    tags: ['stress-relief', 'anxiety-reduction', 'focus', 'sleep']
+    tags: ['stress-relief', 'anxiety-reduction', 'focus', 'sleep'],
   },
+
   {
     id: 'breathing_box_breathing',
     title: 'Box Breathing',
     description: 'Equal breathing in four directions',
     type: 'breathing',
     difficulty: 'beginner',
-    duration: 120,
+    steps: [
+      {
+        title: 'Inhale → Hold → Exhale → Hold (4s each)',
+        duration: 16,
+        image: IMG.breathing_box,
+      },
+      {
+        title: 'Repeat for 2 minutes',
+        duration: 104,
+        image: IMG.breathing_box,
+      },
+    ],
     instructions: [
-      'Inhale for 4 seconds',
-      'Hold for 4 seconds',
-      'Exhale for 4 seconds',
-      'Hold for 4 seconds',
-      'Repeat for 2 minutes',
-      'Focus on the square pattern',
-      'Notice your calm state'
+      'Visualize tracing a square with each phase.',
+      'Keep breaths smooth and controlled.',
+      'You may close your eyes for deeper focus.',
     ],
     benefits: [
       'Reduces stress and anxiety',
       'Improves concentration',
       'Regulates nervous system',
-      'Enhances emotional control'
+      'Enhances emotional control',
     ],
-    tags: ['stress-relief', 'concentration', 'emotional-control']
+    tags: ['stress-relief', 'concentration', 'emotional-control'],
   },
 
-  // Break Exercises
+  // -------------------------------------------------------------------------
+  // BREAK ACTIVITIES
+  // -------------------------------------------------------------------------
   {
     id: 'break_walk',
     title: 'Quick Walk',
     description: 'Take a short walk to refresh your body and mind',
     type: 'break',
     difficulty: 'beginner',
-    duration: 300, // 5 minutes
+    steps: [
+      {
+        title: 'Walk around & breathe deeply',
+        duration: 300,
+        image: IMG.break_walk,
+      },
+    ],
     instructions: [
-      'Stand up from your workspace',
-      'Walk around your space',
-      'Take deep breaths',
-      'Notice your surroundings',
-      'Return refreshed',
-      'Resume work with renewed focus'
+      'Leave your workspace completely.',
+      'Notice your surroundings and posture.',
+      'Walk at a comfortable pace.',
     ],
     benefits: [
       'Improves circulation',
       'Reduces mental fatigue',
       'Increases energy levels',
-      'Better concentration'
+      'Better concentration',
     ],
-    tags: ['energy', 'circulation', 'mental-refresh', 'focus']
+    tags: ['energy', 'circulation', 'mental-refresh', 'focus'],
   },
+
   {
     id: 'break_hydration',
     title: 'Hydration Break',
     description: 'Drink water and stay hydrated',
     type: 'break',
     difficulty: 'beginner',
-    duration: 30,
+    steps: [
+      {
+        title: 'Drink water mindfully',
+        duration: 30,
+        image: IMG.break_hydration,
+      },
+    ],
     instructions: [
-      'Get a glass of water',
-      'Drink slowly and mindfully',
-      'Take a few deep breaths',
-      'Notice how you feel',
-      'Return to your tasks',
-      'Stay hydrated throughout the day'
+      'Sip slowly – don’t gulp.',
+      'Take a few deep breaths while drinking.',
+      'Refill your bottle for the day.',
     ],
     benefits: [
       'Maintains hydration',
       'Improves cognitive function',
       'Reduces headaches',
-      'Better overall health'
+      'Better overall health',
     ],
-    tags: ['hydration', 'health', 'cognitive-function', 'prevention']
-  }
+    tags: ['hydration', 'health', 'cognitive-function', 'prevention'],
+  },
 ];
 
+// -----------------------------------------------------------------------------
+// CATEGORIES (unchanged structure, just reference filtered data)
+// -----------------------------------------------------------------------------
 export const exerciseCategories: ExerciseCategory[] = [
   {
     id: 'eye',
@@ -247,7 +360,7 @@ export const exerciseCategories: ExerciseCategory[] = [
     description: 'Exercises to reduce eye strain and improve vision health',
     icon: 'eye-outline',
     color: '#3b82f6',
-    exercises: exercisesData.filter(e => e.type === 'eye')
+    exercises: exercisesData.filter((e) => e.type === 'eye'),
   },
   {
     id: 'posture',
@@ -255,7 +368,7 @@ export const exerciseCategories: ExerciseCategory[] = [
     description: 'Improve your posture and reduce musculoskeletal strain',
     icon: 'body-outline',
     color: '#10b981',
-    exercises: exercisesData.filter(e => e.type === 'posture')
+    exercises: exercisesData.filter((e) => e.type === 'posture'),
   },
   {
     id: 'breathing',
@@ -263,7 +376,7 @@ export const exerciseCategories: ExerciseCategory[] = [
     description: 'Techniques to reduce stress and improve focus',
     icon: 'leaf-outline',
     color: '#f59e0b',
-    exercises: exercisesData.filter(e => e.type === 'breathing')
+    exercises: exercisesData.filter((e) => e.type === 'breathing'),
   },
   {
     id: 'break',
@@ -271,6 +384,6 @@ export const exerciseCategories: ExerciseCategory[] = [
     description: 'Quick activities to refresh during work breaks',
     icon: 'pause-outline',
     color: '#ef4444',
-    exercises: exercisesData.filter(e => e.type === 'break')
-  }
+    exercises: exercisesData.filter((e) => e.type === 'break'),
+  },
 ];
