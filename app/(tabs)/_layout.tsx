@@ -38,6 +38,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="home"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="home" focused={focused} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
           name="dashboard"
           options={{
             tabBarIcon: ({ focused }) => (
