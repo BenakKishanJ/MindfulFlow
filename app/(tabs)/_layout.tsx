@@ -53,14 +53,14 @@ export default function TabLayout() {
             ),
           }}
         />
-        {/* <Tabs.Screen */}
-        {/*   name="chatbot" */}
-        {/*   options={{ */}
-        {/*     tabBarIcon: ({ focused }) => ( */}
-        {/*       <TabIcon icon="chatbubble-ellipses-outline" focused={focused} /> */}
-        {/*     ), */}
-        {/*   }} */}
-        {/* /> */}
+        <Tabs.Screen
+          name="log"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="add-circle-outline" focused={focused} />
+            ),
+          }}
+        />
         <Tabs.Screen
           name="insights"
           options={{
@@ -118,7 +118,7 @@ function FAB({ onPress }: { onPress: () => void }) {
     <View className="absolute bottom-36 right-10 z-50">
       <TouchableOpacity
         onPress={onPress}
-        activeOpacity={0.8}
+        activeOpacity={0.1}
         className="w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-black/40 bg-white border-2 border-black"
         style={{
           // Lime background on press
@@ -137,7 +137,7 @@ function FAB({ onPress }: { onPress: () => void }) {
         }}
       >
         {/* <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-black"> */}
-        <View className="w-28 h-28 rounded-full overflow-hidden">
+        <View className="w-24 h-24 rounded-full overflow-hidden">
           <Image
             source={require("@/assets/images/ai_coach.png")}
             className="w-full h-full"
