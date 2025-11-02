@@ -1,5 +1,5 @@
 // app/(tabs)/profile.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -17,11 +17,89 @@ import { router } from "expo-router";
 export default function Profile() {
   const { currentUser, userProfile, loading, logout } = useAuth();
 
-  // === LOADING STATE ===
-  if (loading || !userProfile) {
+  // === TIMEOUT: Force logout if loading > 8s ===
+  useEffect(() => {
+    if (!loading) return;
+
+    const timeout = setTimeout(() => {
+      Alert.alert(
+        "Session Timeout",
+        "We couldn't load your profile. You may be signed in with a deleted or invalid account.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign Out",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await logout();
+                router.replace("/(auth)/login");
+              } catch (err) {
+                Alert.alert("Error", "Failed to sign out.");
+              }
+            },
+          },
+        ]
+      );
+    }, 8000); // 8 seconds
+
+    return () => clearTimeout(timeout);
+  }, [loading, logout]);
+
+  // === LOADING WITH FALLBACK UI ===
+  if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#000" />
+      <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
+        <ActivityIndicator size="large" color="#A3E635" />
+        <Text className="text-black font-medium text-lg mt-6 text-center">
+          Loading your profile...
+        </Text>
+        <Text className="text-gray-500 text-sm mt-2 text-center">
+          This should only take a moment
+        </Text>
+        <TouchableOpacity
+          onPress={async () => {
+            try {
+              await logout();
+              router.replace("/(auth)/login");
+            } catch (err) {
+              Alert.alert("Error", "Failed to sign out.");
+            }
+          }}
+          className="mt-8 px-6 py-3 bg-red-500 rounded-full"
+        >
+          <Text className="text-white font-bold">Force Sign Out</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  // === NO USER OR PROFILE (DELETED ACCOUNT?) ===
+  if (!currentUser || !userProfile) {
+    return (
+      <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
+        <View className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 max-w-sm">
+          <Ionicons name="alert-circle" size={48} color="#EF4444" />
+          <Text className="text-black text-xl font-bold mt-4 text-center">
+            Profile Not Found
+          </Text>
+          <Text className="text-gray-600 text-center mt-2">
+            This account may have been deleted or is corrupted.
+          </Text>
+          <TouchableOpacity
+            onPress={async () => {
+              try {
+                await logout();
+                router.replace("/(auth)/login");
+              } catch (err) {
+                Alert.alert("Error", "Failed to sign out.");
+              }
+            }}
+            className="mt-6 bg-red-500 py-3 px-6 rounded-full"
+          >
+            <Text className="text-white font-bold text-center">Sign Out & Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -81,7 +159,6 @@ export default function Profile() {
   // === NO-OP HANDLERS FOR NAVIGATION ===
   const handleNavigate = (screen: string) => {
     Alert.alert("Coming Soon", `${screen} screen is under development.`);
-    // Later: router.push(`/settings/${screen.toLowerCase().replace(" ", "-")}`);
   };
 
   // === COMPONENTS ===
