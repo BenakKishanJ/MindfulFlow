@@ -33,24 +33,15 @@ export default function TabLayout() {
           name="index"
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="pulse-outline" focused={focused} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="home"
-          options={{
-            tabBarIcon: ({ focused }) => (
               <TabIcon icon="home" focused={focused} />
             ),
           }}
         />
-
         <Tabs.Screen
-          name="dashboard"
+          name="blink"
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="analytics-outline" focused={focused} />
+              <TabIcon icon="eye" focused={focused} />
             ),
           }}
         />
@@ -78,22 +69,6 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="person-outline" focused={focused} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="settings-outline" focused={focused} />
-            ),
-          }}
-        />
       </Tabs>
 
       {/* === FLOATING ACTION BUTTON (FAB) === */}
@@ -109,7 +84,7 @@ function TabIcon({ icon, focused }: { icon: any; focused: boolean }) {
       <Ionicons
         name={icon}
         size={26}
-        color={focused ? "#A3E635" : "#CACACA"}
+        color={focused ? "#FFFFFF" : "#CECECE"}
       />
       {focused && (
         <View
@@ -127,8 +102,9 @@ function FAB({ onPress }: { onPress: () => void }) {
     <View className="absolute bottom-36 right-10 z-50">
       <TouchableOpacity
         onPress={onPress}
-        activeOpacity={0.1}
-        className="w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-black/40 bg-white border-2 border-black"
+        activeOpacity={0.0}
+        // className="w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-[#212121]/40 bg-white border-2 border-[#212121]"
+        className="w-16 h-16 rounded-full items-center justify-center border-2"
         style={{
           // Lime background on press
           backgroundColor: undefined,
@@ -145,7 +121,7 @@ function FAB({ onPress }: { onPress: () => void }) {
           });
         }}
       >
-        {/* <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-black"> */}
+        {/* <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-[#212121]"> */}
         <View className="w-24 h-24 rounded-full overflow-hidden">
           <Image
             source={require("@/assets/images/ai_coach.png")}

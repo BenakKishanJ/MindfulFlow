@@ -96,7 +96,7 @@ export default function LoginScreen() {
 
         <View className="px-8 flex-1 justify-center">
           {/* Header */}
-          <Text className="text-4xl font-bold text-center mb-5 text-black">
+          <Text className="text-4xl font-bold text-center mb-5 text-[#212121]">
             Login
           </Text>
           <Text className="text-base text-center text-gray-600 mb-8">
@@ -137,14 +137,14 @@ export default function LoginScreen() {
             disabled={loading}
             className="self-end mb-6"
           >
-            <Text className="text-sm text-black">Forgot Password?</Text>
+            <Text className="text-sm text-[#212121]">Forgot Password?</Text>
           </TouchableOpacity>
 
           {/* Submit */}
           <TouchableOpacity
             onPress={handleLogin}
             disabled={loading}
-            className="bg-black rounded-full py-4 items-center"
+            className="bg-[#212121] rounded-full py-4 items-center"
           >
             {loading ? (
               <ActivityIndicator color="#fff" />

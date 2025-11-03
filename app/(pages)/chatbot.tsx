@@ -127,7 +127,7 @@ const MentalHealthChatbot = () => {
   if (!user) {
     return (
       <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
-        <Text className="text-black font-bold text-lg text-center">
+        <Text className="text-[#212121] font-bold text-lg text-center">
           Sign in to chat with your wellness guide
         </Text>
       </SafeAreaView>
@@ -142,7 +142,7 @@ const MentalHealthChatbot = () => {
         onPress={() => router.back()}
         className="absolute top-14 left-6 w-11 h-11 rounded-full border border-gray-300 items-center justify-center bg-white shadow-sm"
         style={{ zIndex: 10 }}>
-        <Text className="text-black text-xl font-bold">←</Text>
+        <Text className="text-[#212121] text-xl font-bold">←</Text>
       </TouchableOpacity>
 
       <ScrollView
@@ -154,7 +154,7 @@ const MentalHealthChatbot = () => {
         {/* === WELCOME HEADING (Only on empty chat) === */}
         {messages.length === 0 && (
           <View className="mb-10 items-center">
-            <Text className="text-black font-bold text-3xl text-center mb-2">
+            <Text className="text-[#212121] font-bold text-3xl text-center mb-2">
               Mindful AI
             </Text>
             <Text className="text-gray-600 font-medium text-base text-center">
@@ -171,12 +171,12 @@ const MentalHealthChatbot = () => {
           >
             <View
               className={`max-w-[82%] px-4 py-3 rounded-2xl border ${msg.sender === 'user'
-                ? 'bg-black border-black'
+                ? 'bg-[#212121] border-[#212121]'
                 : 'bg-white border-gray-300 shadow-sm'
                 }`}
             >
               <Text
-                className={`font-medium text-base ${msg.sender === 'user' ? 'text-white' : 'text-black'
+                className={`font-medium text-base ${msg.sender === 'user' ? 'text-white' : 'text-[#212121]'
                   }`}
               >
                 {msg.text}
@@ -216,7 +216,7 @@ const MentalHealthChatbot = () => {
                   onPress={() => handleQuickSuggestion(tip)}
                   className="border border-gray-300 px-4 py-2 rounded-xl bg-white shadow-sm"
                 >
-                  <Text className="text-black font-medium text-sm">{tip}</Text>
+                  <Text className="text-[#212121] font-medium text-sm">{tip}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -233,7 +233,7 @@ const MentalHealthChatbot = () => {
           <View className="flex-row items-center gap-3">
             {/* Rounded Input */}
             <TextInput
-              className="flex-1 bg-white border border-gray-300 px-4 py-3 rounded-xl font-medium text-black placeholder-gray-500 shadow-sm"
+              className="flex-1 bg-white border border-gray-300 px-4 py-3 rounded-xl font-medium text-[#212121] placeholder-gray-500 shadow-sm"
               placeholder="Ask about eye care, posture..."
               value={inputText}
               onChangeText={setInputText}
@@ -251,7 +251,7 @@ const MentalHealthChatbot = () => {
                 }`}
             >
               <Text
-                className={`font-bold text-lg ${inputText.trim() ? 'text-black' : 'text-gray-400'
+                className={`font-bold text-lg ${inputText.trim() ? 'text-[#212121]' : 'text-gray-400'
                   }`}
               >
                 ↑

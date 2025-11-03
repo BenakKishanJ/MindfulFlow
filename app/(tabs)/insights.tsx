@@ -212,7 +212,7 @@ OUTPUT FORMAT (strict):
 **Score**: ${data.wellnessScore}/100 – [one-word summary: Excellent/Good/Fair/Needs Work]
 `;
 
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       const reportText = result.response.text();
 
@@ -255,7 +255,7 @@ OUTPUT FORMAT (strict):
   if (!currentUser) {
     return (
       <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
-        <Text className="text-black font-bold text-lg text-center">
+        <Text className="text-[#212121] font-bold text-lg text-center">
           Sign in to view your insights
         </Text>
       </SafeAreaView>
@@ -285,7 +285,7 @@ OUTPUT FORMAT (strict):
         <Animated.View style={{ opacity: fadeAnim }} className="px-6 pt-6">
           {/* Header */}
           <View className="flex-row items-center justify-between mb-6">
-            <Text className="text-black text-3xl font-bold">
+            <Text className="text-[#212121] text-3xl font-bold">
               Insights
             </Text>
             <TouchableOpacity
@@ -295,9 +295,9 @@ OUTPUT FORMAT (strict):
                 }`}
             >
               {generatingReport ? (
-                <ActivityIndicator size="small" color="black" />
+                <ActivityIndicator size="small" color="#212121" />
               ) : (
-                <Ionicons name="refresh" size={24} color="black" />
+                <Ionicons name="refresh" size={24} color="#212121" />
               )}
             </TouchableOpacity>
           </View>
@@ -331,7 +331,7 @@ OUTPUT FORMAT (strict):
                     <Ionicons name="time-outline" size={20} color="#A3E635" />
                     <Text className="text-gray-600 text-sm ml-2">Screen Time</Text>
                   </View>
-                  <Text className="text-black text-2xl font-bold">
+                  <Text className="text-[#212121] text-2xl font-bold">
                     {Math.floor(data.totalScreenTime / 60)}h {data.totalScreenTime % 60}m
                   </Text>
                 </View>
@@ -341,7 +341,7 @@ OUTPUT FORMAT (strict):
                     <Ionicons name="happy-outline" size={20} color="#A855F7" />
                     <Text className="text-gray-600 text-sm ml-2">Mood</Text>
                   </View>
-                  <Text className="text-black text-2xl font-bold">
+                  <Text className="text-[#212121] text-2xl font-bold">
                     {data.avgMood}/5
                   </Text>
                 </View>
@@ -351,7 +351,7 @@ OUTPUT FORMAT (strict):
                     <Ionicons name="leaf-outline" size={20} color="#84CC16" />
                     <Text className="text-gray-600 text-sm ml-2">Exercises</Text>
                   </View>
-                  <Text className="text-black text-2xl font-bold">
+                  <Text className="text-[#212121] text-2xl font-bold">
                     {data.totalExercises}
                   </Text>
                 </View>
@@ -361,7 +361,7 @@ OUTPUT FORMAT (strict):
                     <Ionicons name="star" size={20} color="#F59E0B" />
                     <Text className="text-gray-600 text-sm ml-2">Score</Text>
                   </View>
-                  <Text className="text-black text-2xl font-bold">
+                  <Text className="text-[#212121] text-2xl font-bold">
                     {data.wellnessScore}
                   </Text>
                 </View>
@@ -372,7 +372,7 @@ OUTPUT FORMAT (strict):
                 {/* Tag Pie */}
                 {Object.keys(data.tagBreakdown).length > 0 && (
                   <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                    <Text className="text-black font-bold text-lg mb-4">
+                    <Text className="text-[#212121] font-bold text-lg mb-4">
                       Screen Time by Category
                     </Text>
                     <PieChart
@@ -399,7 +399,7 @@ OUTPUT FORMAT (strict):
                 {/* Mood Bar */}
                 {data.moodDistribution.some((v) => v > 0) && (
                   <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                    <Text className="text-black font-bold text-lg mb-4">
+                    <Text className="text-[#212121] font-bold text-lg mb-4">
                       Mood Distribution
                     </Text>
                     <BarChart
@@ -436,7 +436,7 @@ OUTPUT FORMAT (strict):
                       <Ionicons name="share-outline" size={22} color="#9333EA" />
                     </TouchableOpacity>
                   </View>
-                  <Text className="text-black leading-6 whitespace-pre-line">
+                  <Text className="text-[#212121] leading-6 whitespace-pre-line">
                     {data.aiReport.text}
                   </Text>
                 </View>
@@ -445,11 +445,11 @@ OUTPUT FORMAT (strict):
                   onPress={generateReport}
                   className="bg-gradient-to-r from-lime-400 to-purple-500 p-6 rounded-2xl items-center shadow-lg mb-8"
                 >
-                  <Ionicons name="sparkles" size={28} color="black" />
-                  <Text className="text-black font-bold text-lg mt-2">
+                  <Ionicons name="sparkles" size={28} color="#212121" />
+                  <Text className="text-[#212121] font-bold text-lg mt-2">
                     Generate AI Report
                   </Text>
-                  <Text className="text-black/80 text-sm mt-1">
+                  <Text className="text-[#212121]/80 text-sm mt-1">
                     Get personalized insights
                   </Text>
                 </TouchableOpacity>

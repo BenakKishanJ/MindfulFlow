@@ -330,7 +330,7 @@ export default function LogScreen() {
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <Animated.View style={{ opacity: fadeAnim }} className="px-5 py-6">
             {/* Header */}
-            <Text className="text-black text-4xl font-bold mb-2">
+            <Text className="text-[#212121] text-4xl font-bold mb-2">
               {greeting}!
             </Text>
             <Text className="text-gray-600 text-lg mb-6">
@@ -344,7 +344,7 @@ export default function LogScreen() {
                 <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <View className="flex-row items-center justify-between mb-2">
                     <Ionicons name="time-outline" size={24} color="#84cc16" />
-                    <Text className="text-2xl font-bold text-black">
+                    <Text className="text-2xl font-bold text-[#212121]">
                       {formatDuration(totalTime)}
                     </Text>
                   </View>
@@ -355,7 +355,7 @@ export default function LogScreen() {
                 <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <View className="flex-row items-center justify-between mb-2">
                     <Ionicons name="apps-outline" size={24} color="#a855f7" />
-                    <Text className="text-2xl font-bold text-black">
+                    <Text className="text-2xl font-bold text-[#212121]">
                       {Object.keys(todayLogs).length}
                     </Text>
                   </View>
@@ -387,7 +387,7 @@ export default function LogScreen() {
               }}
               className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 flex-row items-center justify-between"
             >
-              <Text className="text-black font-semibold">
+              <Text className="text-[#212121] font-semibold">
                 How to find your screen time
               </Text>
               <Ionicons
@@ -436,7 +436,7 @@ export default function LogScreen() {
                   placeholder="Search apps..."
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  className="bg-white border border-gray-200 pl-12 pr-4 py-3.5 rounded-2xl text-black"
+                  className="bg-white border border-gray-200 pl-12 pr-4 py-3.5 rounded-2xl text-[#212121]"
                   placeholderTextColor="#9ca3af"
                 />
               </View>
@@ -494,7 +494,7 @@ export default function LogScreen() {
                     >
                       <View className="flex-row items-center justify-between">
                         <View className="flex-1 mr-3">
-                          <Text className="text-black text-lg font-bold mb-1">
+                          <Text className="text-[#212121] text-lg font-bold mb-1">
                             {app.name}
                           </Text>
                           <View className="flex-row items-center">
@@ -546,7 +546,7 @@ export default function LogScreen() {
                       <View className="bg-white rounded-2xl p-5 mt-2 shadow-sm border border-gray-100">
                         {/* Duration Input */}
                         <View className="mb-6">
-                          <Text className="text-black font-bold mb-3">
+                          <Text className="text-[#212121] font-bold mb-3">
                             Time Spent Today
                           </Text>
                           <View className="flex-row gap-3 mb-4">
@@ -562,7 +562,7 @@ export default function LogScreen() {
                                   updateDuration(app.name, h, minutes);
                                 }}
                                 keyboardType="number-pad"
-                                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-black font-bold text-xl text-center"
+                                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-[#212121] font-bold text-xl text-center"
                                 maxLength={2}
                               />
                               <Text className="text-gray-500 text-xs text-center mt-1">
@@ -581,7 +581,7 @@ export default function LogScreen() {
                                   updateDuration(app.name, hours, m);
                                 }}
                                 keyboardType="number-pad"
-                                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-black font-bold text-xl text-center"
+                                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-[#212121] font-bold text-xl text-center"
                                 maxLength={2}
                               />
                               <Text className="text-gray-500 text-xs text-center mt-1">
@@ -624,7 +624,7 @@ export default function LogScreen() {
 
                         {/* Mood Selection */}
                         <View className="mb-6">
-                          <Text className="text-black font-bold mb-3">
+                          <Text className="text-[#212121] font-bold mb-3">
                             How did it make you feel?
                           </Text>
                           <View className="flex-row justify-between">
@@ -660,7 +660,7 @@ export default function LogScreen() {
                                 />
                                 <Text
                                   className={`text-xs font-semibold mt-1 ${log?.mood === mood.value
-                                    ? "text-black"
+                                    ? "text-[#212121]"
                                     : "text-gray-500"
                                     }`}
                                 >
@@ -673,7 +673,7 @@ export default function LogScreen() {
 
                         {/* Note */}
                         <View className="mb-6">
-                          <Text className="text-black font-bold mb-3">
+                          <Text className="text-[#212121] font-bold mb-3">
                             Add a note (optional)
                           </Text>
                           <TextInput
@@ -696,14 +696,14 @@ export default function LogScreen() {
                             }}
                             multiline
                             numberOfLines={3}
-                            className="bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-black"
+                            className="bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[#212121]"
                             placeholderTextColor="#9ca3af"
                           />
                         </View>
 
                         {/* Category Tags */}
                         <View>
-                          <Text className="text-black font-bold mb-3">
+                          <Text className="text-[#212121] font-bold mb-3">
                             Category
                           </Text>
                           <View className="flex-row flex-wrap gap-2">
@@ -769,10 +769,10 @@ export default function LogScreen() {
           animationType="fade"
           onRequestClose={() => setShowAddModal(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center px-5">
+          <View className="flex-1 bg-[#212121]/50 justify-center items-center px-5">
             <View className="bg-white rounded-3xl p-6 w-full max-w-md">
               <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-black text-2xl font-bold">
+                <Text className="text-[#212121] text-2xl font-bold">
                   Add New App
                 </Text>
                 <TouchableOpacity
@@ -789,7 +789,7 @@ export default function LogScreen() {
                 onChangeText={setNewAppName}
                 onSubmitEditing={handleAddApp}
                 autoFocus
-                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-black mb-4"
+                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-[#212121] mb-4"
                 placeholderTextColor="#9ca3af"
               />
 
@@ -809,10 +809,10 @@ export default function LogScreen() {
                   <Ionicons
                     name="checkmark-circle"
                     size={20}
-                    color={newAppName.trim() ? "black" : "#9ca3af"}
+                    color={newAppName.trim() ? "#212121" : "#9ca3af"}
                   />
                   <Text
-                    className={`font-bold ml-2 ${newAppName.trim() ? "text-black" : "text-gray-500"
+                    className={`font-bold ml-2 ${newAppName.trim() ? "text-[#212121]" : "text-gray-500"
                       }`}
                   >
                     Add App

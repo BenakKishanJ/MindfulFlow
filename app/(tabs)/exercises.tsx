@@ -137,7 +137,7 @@ export default function Exercises() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="px-6 py-8 border-b border-gray-200">
-          <Text className="text-black text-3xl font-bold">Exercises</Text>
+          <Text className="text-[#212121] text-3xl font-bold">Exercises</Text>
           <Text className="text-gray-600 text-base mt-1">
             Take a break and recharge
           </Text>
@@ -156,7 +156,7 @@ export default function Exercises() {
                   key={category.id}
                   onPress={() => setSelectedCategory(category.id as any)}
                   className={`px-5 py-3 mr-3 rounded-full border-2 ${selectedCategory === category.id
-                      ? "bg-lime-400 border-black"
+                      ? "bg-lime-400 border-[#212121]"
                       : "bg-white border-gray-300"
                     }`}
                   style={{
@@ -168,7 +168,7 @@ export default function Exercises() {
                   }}
                 >
                   <Text
-                    className={`font-semibold text-sm ${selectedCategory === category.id ? "text-black" : "text-gray-700"
+                    className={`font-semibold text-sm ${selectedCategory === category.id ? "text-[#212121]" : "text-gray-700"
                       }`}
                   >
                     {category.name}

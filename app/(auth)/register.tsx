@@ -105,7 +105,7 @@ export default function RegisterScreen() {
 
         <View className="px-8 flex-1 justify-center">
           {/* Header */}
-          <Text className="text-3xl font-bold text-center mb-2 text-black">
+          <Text className="text-3xl font-bold text-center mb-2 text-[#212121]">
             Register
           </Text>
           <Text className="text-base text-center text-gray-600 mb-8">
@@ -176,7 +176,7 @@ export default function RegisterScreen() {
           <TouchableOpacity
             onPress={handleSignup}
             disabled={loading}
-            className="bg-black rounded-full py-4 items-center"
+            className="bg-[#212121] rounded-full py-4 items-center"
           >
             {loading ? (
               <ActivityIndicator color="#fff" />

@@ -51,7 +51,7 @@ export default function Profile() {
     return (
       <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
         <ActivityIndicator size="large" color="#A3E635" />
-        <Text className="text-black font-medium text-lg mt-6 text-center">
+        <Text className="text-[#212121] font-medium text-lg mt-6 text-center">
           Loading your profile...
         </Text>
         <Text className="text-gray-500 text-sm mt-2 text-center">
@@ -80,7 +80,7 @@ export default function Profile() {
       <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
         <View className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 max-w-sm">
           <Ionicons name="alert-circle" size={48} color="#EF4444" />
-          <Text className="text-black text-xl font-bold mt-4 text-center">
+          <Text className="text-[#212121] text-xl font-bold mt-4 text-center">
             Profile Not Found
           </Text>
           <Text className="text-gray-600 text-center mt-2">
@@ -165,16 +165,16 @@ export default function Profile() {
   const StatCard = ({ title, value, icon }: { title: string; value: string | number; icon: keyof typeof Ionicons.glyphMap }) => (
     <View className="flex-1 min-w-[48%] bg-lime-50 border border-lime-200 p-4 rounded-2xl shadow-sm items-center">
       <View className="p-3 bg-lime-400 rounded-full">
-        <Ionicons name={icon} size={24} color="black" />
+        <Ionicons name={icon} size={24} color="#212121" />
       </View>
-      <Text className="text-black text-xl font-bold mt-2">{value}</Text>
+      <Text className="text-[#212121] text-xl font-bold mt-2">{value}</Text>
       <Text className="text-gray-600 text-xs mt-1 text-center">{title}</Text>
     </View>
   );
 
   const MenuSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View className="mb-5">
-      <Text className="text-black text-lg font-bold mb-3 px-1">{title}</Text>
+      <Text className="text-[#212121] text-lg font-bold mb-3 px-1">{title}</Text>
       <View className="bg-white border border-gray-300 rounded-2xl shadow-sm overflow-hidden">
         {children}
       </View>
@@ -204,7 +204,7 @@ export default function Profile() {
         <Ionicons name={icon} size={22} color={iconColor} />
       </View>
       <View className="flex-1">
-        <Text className="text-black font-medium text-base">{title}</Text>
+        <Text className="text-[#212121] font-medium text-base">{title}</Text>
         {subtitle && <Text className="text-gray-500 text-sm mt-0.5">{subtitle}</Text>}
       </View>
       {showArrow && <Ionicons name="chevron-forward" size={20} color="#9ca3af" />}
@@ -220,7 +220,7 @@ export default function Profile() {
         contentContainerStyle={{ paddingBottom: 30 }}
       >
         {/* === HEADER === */}
-        <Text className="text-black text-3xl font-bold mb-8 text-center">
+        <Text className="text-[#212121] text-3xl font-bold mb-8 text-center">
           Profile
         </Text>
 
@@ -230,16 +230,16 @@ export default function Profile() {
             <View className="relative mr-4">
               <Image
                 source={{ uri: avatar }}
-                className="w-20 h-20 rounded-full border-4 border-black"
+                className="w-20 h-20 rounded-full border-4 border-[#212121]"
               />
               {isPremium && (
-                <View className="absolute -top-1 -right-1 bg-lime-400 w-7 h-7 rounded-full items-center justify-center border-2 border-black shadow-md">
-                  <Ionicons name="star" size={15} color="black" />
+                <View className="absolute -top-1 -right-1 bg-lime-400 w-7 h-7 rounded-full items-center justify-center border-2 border-[#212121] shadow-md">
+                  <Ionicons name="star" size={15} color="#212121" />
                 </View>
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-black text-2xl font-bold">{name}</Text>
+              <Text className="text-[#212121] text-2xl font-bold">{name}</Text>
               <Text className="text-gray-600 text-base mt-1">{email}</Text>
               <Text className="text-gray-500 text-sm mt-1">Joined {joinDate}</Text>
             </View>
@@ -248,7 +248,7 @@ export default function Profile() {
 
         {/* === WELLNESS STATS === */}
         <View className="mb-6">
-          <Text className="text-black text-lg font-bold mb-4 px-1">Wellness Stats</Text>
+          <Text className="text-[#212121] text-lg font-bold mb-4 px-1">Wellness Stats</Text>
           <View className="flex-row flex-wrap justify-between gap-3">
             <StatCard title="Total Sessions" value={stats.totalSessions} icon="phone-portrait-outline" />
             <StatCard title="Screen Time" value={stats.totalScreenTime} icon="time-outline" />
