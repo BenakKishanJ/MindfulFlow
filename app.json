@@ -37,6 +37,14 @@
       ],
       "expo-web-browser"
     ],
+    "fonts": [
+      "./assets/fonts/PPMori-Extralight.otf",
+      "./assets/fonts/PPMori-ExtralightItalic.otf",
+      "./assets/fonts/PPMori-Regular.otf",
+      "./assets/fonts/PPMori-RegularItalic.otf",
+      "./assets/fonts/PPMori-SemiBold.otf",
+      "./assets/fonts/PPMori-SemiBoldItalic.otf",
+    ],
     "experiments": {
       "typedRoutes": true
     }

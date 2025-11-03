@@ -1,519 +1,472 @@
-// app/(tabs)/index.tsx
-import React, { useState, useEffect, useRef, useCallback } from "react";
+// app/(tabs)/home.tsx
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  TextInput,
+  Image,
   Alert,
-  StyleSheet,
   ActivityIndicator,
-  Dimensions,
+  KeyboardAvoidingView,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CameraView, useCameraPermissions } from "expo-camera";
-// import * as tf from '@tensorflow/tfjs';
-
-// Import our custom components and services
-import FaceMeshOverlay from "@/components/FaceMeshOverlay";
-import BlinkRateStats from "@/components/BlinkRateStats";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/firebase";
 import {
-  FaceDetectionService,
-  BlinkDetectionService,
-} from "@/services/faceDetectionService";
-import { FaceDetectionResult } from "@/types/face-detection";
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { router } from "expo-router";
 
-const { width: screenWidth } = Dimensions.get("window");
-const CAMERA_WIDTH = screenWidth - 32;
-const CAMERA_HEIGHT = (CAMERA_WIDTH * 4) / 3; // 4:3 aspect ratio
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
+}
 
-export default function Monitor() {
-  // Camera and permissions
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
+interface DayActivity {
+  date: Date;
+  hasActivity: boolean;
+}
 
-  // Detection state
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [faces, setFaces] = useState<FaceDetectionResult[]>([]);
-  const [detectionConfidence, setDetectionConfidence] = useState(0);
+export default function Home() {
+  const { currentUser, loading: authLoading } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTask, setNewTask] = useState("");
+  const [monthDays, setMonthDays] = useState<DayActivity[]>([]);
+  const [stats, setStats] = useState({
+    streak: 0,
+    totalExercises: 0,
+    screenTime: "0h 0m",
+  });
+  const [dataLoading, setDataLoading] = useState(true);
 
-  // Blink statistics
-  const [blinkRate, setBlinkRate] = useState(0);
-  const [totalBlinks, setTotalBlinks] = useState(0);
-  const [leftEyeBlinks, setLeftEyeBlinks] = useState(0);
-  const [rightEyeBlinks, setRightEyeBlinks] = useState(0);
-  const [sessionTime, setSessionTime] = useState(0);
+  const todayKey = format(new Date(), "yyyy-MM-dd");
 
-  // Services
-  const faceDetectionService = useRef<FaceDetectionService>(
-    new FaceDetectionService(),
-  );
-  const blinkDetectionService = useRef<BlinkDetectionService>(
-    new BlinkDetectionService(),
-  );
+  // === LOAD DATA (useCallback BEFORE any early return) ===
+  const loadData = useCallback(async () => {
+    if (!currentUser?.uid) return;
 
-  // Timers
-  const sessionStartRef = useRef<number>(Date.now());
-  const detectionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
-  );
-  const sessionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
-  );
+    setDataLoading(true);
+    try {
+      const uid = currentUser.uid;
 
-  // Initialize TensorFlow and face detection
-  useEffect(() => {
-    const service = faceDetectionService.current;
+      // Load Tasks
+      const tasksRef = collection(db, "users", uid, "tasks");
+      const tasksSnap = await getDocs(tasksRef);
+      const loadedTasks: Task[] = tasksSnap.docs.map((d) => ({
+        id: d.id,
+        title: d.data().title,
+        completed: d.data().completed,
+        createdAt: d.data().createdAt?.toDate() || new Date(),
+      }));
+      setTasks(loadedTasks.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1)));
 
-    const initializeTensorFlow = async () => {
-      try {
-        setIsInitializing(true);
+      // Load Calendar Activities
+      const monthStart = startOfMonth(selectedDate);
+      const monthEnd = endOfMonth(selectedDate);
+      const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-        // Initialize TensorFlow.js
-        // await tf.ready();
-        console.log("TensorFlow.js initialized");
+      const activities: DayActivity[] = await Promise.all(
+        days.map(async (day) => {
+          const dayKey = format(day, "yyyy-MM-dd");
+          const progressRef = doc(db, "users", uid, "dailyProgress", dayKey);
+          const logsRef = collection(db, "users", uid, "logs", dayKey, "apps");
 
-        // Initialize face detection service
-        const initialized = await service?.initialize();
-        if (!initialized) {
-          Alert.alert("Error", "Failed to initialize face detection");
-        }
-      } catch (error) {
-        console.error("TensorFlow initialization error:", error);
-        Alert.alert("Error", "Failed to initialize AI models");
-      } finally {
-        setIsInitializing(false);
+          const [progressSnap, logsSnap] = await Promise.all([
+            getDoc(progressRef),
+            getDocs(logsRef),
+          ]);
+          const hasExercise = progressSnap.exists() && (progressSnap.data()?.totalCompletions || 0) > 0;
+          const hasScreenTime = logsSnap.size > 0;
+
+          return { date: day, hasActivity: hasExercise || hasScreenTime };
+        })
+      );
+      setMonthDays(activities);
+
+      // Load Stats
+      let streakCount = 0;
+      let checkDate = new Date();
+      while (streakCount < 30) {
+        const dayKey = format(checkDate, "yyyy-MM-dd");
+        const progressSnap = await getDoc(doc(db, "users", uid, "dailyProgress", dayKey));
+        if (!progressSnap.exists() || (progressSnap.data()?.totalCompletions || 0) === 0) break;
+        streakCount++;
+        checkDate = new Date(checkDate.getTime() - 86400000);
       }
-    };
 
-    initializeTensorFlow();
+      const todayProgressSnap = await getDoc(doc(db, "users", uid, "dailyProgress", todayKey));
+      const totalExercises = todayProgressSnap.data()?.totalCompletions || 0;
 
-    return () => {
-      service?.dispose();
-    };
-  }, []);
+      const logsRef = collection(db, "users", uid, "logs", todayKey, "apps");
+      const logsSnap = await getDocs(logsRef);
+      const totalScreenTime = logsSnap.docs.reduce((sum, d) => sum + (d.data().durationMinutes || 0), 0);
+      const screenHours = Math.floor(totalScreenTime / 60);
+      const screenMins = totalScreenTime % 60;
+      const screenTimeStr = `${screenHours}h ${screenMins}m`;
 
-  // Session timer
-  useEffect(() => {
-    if (isMonitoring) {
-      sessionStartRef.current = Date.now();
-      sessionIntervalRef.current = setInterval(() => {
-        setSessionTime(
-          Math.floor((Date.now() - sessionStartRef.current) / 1000),
-        );
-      }, 1000);
-    } else {
-      if (sessionIntervalRef.current) {
-        clearInterval(sessionIntervalRef.current);
-      }
+      setStats({ streak: streakCount, totalExercises, screenTime: screenTimeStr });
+    } catch (err) {
+      console.error("Load error:", err);
+      Alert.alert("Error", "Failed to load data.");
+    } finally {
+      setDataLoading(false);
     }
+  }, [currentUser?.uid, selectedDate, todayKey]);
 
-    return () => {
-      if (sessionIntervalRef.current) {
-        clearInterval(sessionIntervalRef.current);
-      }
-    };
-  }, [isMonitoring]);
+  // === useEffect (AFTER useCallback, BEFORE any early return) ===
+  useEffect(() => {
+    if (currentUser?.uid) {
+      loadData();
+    }
+  }, [loadData, currentUser?.uid]);
 
-  // Face detection loop
-  const startFaceDetection = useCallback(async () => {
-    if (!cameraRef.current || !isMonitoring) return;
+  // === EARLY RETURNS (AFTER ALL HOOKS) ===
+  if (authLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#2D2D2D] justify-center items-center">
+        <ActivityIndicator size="large" color="#A3E635" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#2D2D2D] justify-center items-center px-6">
+        <Ionicons name="flower" size={64} color="#A3E635" style={{ marginBottom: 20 }} />
+        <Text className="text-white font-bold text-2xl text-center mb-2">
+          Welcome to MindfulFlow
+        </Text>
+        <Text className="text-gray-400 text-center mb-6">
+          Sign in to access your wellness hub
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.replace("/(auth)/login")}
+          className="bg-lime-400 px-8 py-4 rounded-full"
+        >
+          <Text className="text-[#2D2D2D] font-bold text-base">Get Started</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const name = currentUser.displayName || "User";
+  const avatar =
+    currentUser.photoURL ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=BFFF00&color=2D2D2D&size=128&bold=true`;
+
+  // === ADD TASK ===
+  const addTask = async () => {
+    if (!newTask.trim() || !currentUser.uid) return;
 
     try {
-      // Take picture from camera
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        base64: true,
-        skipProcessing: true,
+      const tasksRef = collection(db, "users", currentUser.uid, "tasks");
+      const newDoc = await addDoc(tasksRef, {
+        title: newTask.trim(),
+        completed: false,
+        createdAt: serverTimestamp(),
       });
 
-      if (photo && photo.uri) {
-        // Convert image to tensor
-        const imageTensor =
-          await faceDetectionService.current.processImageTensor(
-            photo.uri,
-            CAMERA_WIDTH,
-            CAMERA_HEIGHT,
-          );
-
-        // Detect faces
-        const detectedFaces =
-          await faceDetectionService.current.detectFaces(imageTensor);
-
-        // Clean up tensor
-        imageTensor.dispose();
-
-        if (detectedFaces.length > 0) {
-          const face = detectedFaces[0]; // Use the first detected face
-          setFaces([face]);
-          setDetectionConfidence(face.probability);
-
-          // Process blink detection
-          if (
-            face.leftEyeOpenProbability !== undefined &&
-            face.rightEyeOpenProbability !== undefined
-          ) {
-            const blinkResult = blinkDetectionService.current.detectBlink(
-              face.leftEyeOpenProbability,
-              face.rightEyeOpenProbability,
-            );
-
-            if (blinkResult.anyBlink) {
-              setTotalBlinks((prev) => prev + 1);
-
-              if (blinkResult.leftBlink) {
-                setLeftEyeBlinks((prev) => prev + 1);
-              }
-              if (blinkResult.rightBlink) {
-                setRightEyeBlinks((prev) => prev + 1);
-              }
-            }
-
-            // Update blink rate
-            const currentRate =
-              blinkDetectionService.current.calculateBlinkRate();
-            setBlinkRate(currentRate);
-          }
-        } else {
-          setFaces([]);
-          setDetectionConfidence(0);
-        }
-      }
-    } catch (error) {
-      console.error("Face detection error:", error);
-    }
-  }, [isMonitoring]);
-
-  // Detection interval management
-  useEffect(() => {
-    if (isMonitoring) {
-      detectionIntervalRef.current = setInterval(startFaceDetection, 500); // Every 500ms
-    } else {
-      if (detectionIntervalRef.current) {
-        clearInterval(detectionIntervalRef.current);
-        detectionIntervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (detectionIntervalRef.current) {
-        clearInterval(detectionIntervalRef.current);
-      }
-    };
-  }, [isMonitoring, startFaceDetection]);
-
-  const startMonitoring = async () => {
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        Alert.alert(
-          "Permission Required",
-          "Camera permission is required for blink monitoring",
-        );
-        return;
-      }
-    }
-
-    if (isInitializing) {
-      Alert.alert(
-        "Please Wait",
-        "AI models are still loading. Please try again in a moment.",
-      );
-      return;
-    }
-
-    // Reset all counters
-    setIsMonitoring(true);
-    setTotalBlinks(0);
-    setLeftEyeBlinks(0);
-    setRightEyeBlinks(0);
-    setBlinkRate(0);
-    setSessionTime(0);
-    blinkDetectionService.current.reset();
-    sessionStartRef.current = Date.now();
-  };
-
-  const stopMonitoring = () => {
-    setIsMonitoring(false);
-    setFaces([]);
-    setDetectionConfidence(0);
-  };
-
-  const toggleMonitoring = () => {
-    if (!isMonitoring) {
-      Alert.alert(
-        "Start Blink Monitoring",
-        "MindfulFlow will analyze your blink rate using advanced AI face detection. Ensure good lighting and keep your face visible to the camera.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Start", onPress: startMonitoring },
-        ],
-      );
-    } else {
-      Alert.alert(
-        "Stop Monitoring",
-        "Are you sure you want to stop the blink rate monitoring session?",
-        [
-          { text: "Continue", style: "cancel" },
-          { text: "Stop", onPress: stopMonitoring, style: "destructive" },
-        ],
-      );
+      setTasks((prev) => [
+        ...prev,
+        {
+          id: newDoc.id,
+          title: newTask.trim(),
+          completed: false,
+          createdAt: new Date(),
+        },
+      ]);
+      setNewTask("");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      Alert.alert("Error", "Failed to add task.");
     }
   };
 
-  // Loading state
-  if (isInitializing) {
-    return (
-      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center px-4">
-        <ActivityIndicator size="large" color="#8B5CF6" />
-        <Text className="text-lg font-semibold text-gray-900 mt-4 text-center">
-          Loading AI Models
-        </Text>
-        <Text className="text-gray-600 text-center mt-2">
-          Preparing face detection and blink analysis...
-        </Text>
-      </SafeAreaView>
-    );
-  }
+  // === TOGGLE TASK ===
+  const toggleTask = async (taskId: string, completed: boolean) => {
+    if (!currentUser.uid) return;
 
-  // Permission states
-  if (!permission) {
-    return (
-      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#8B5CF6" />
-        <Text className="text-lg mt-4">Requesting camera permission...</Text>
-      </SafeAreaView>
-    );
-  }
+    try {
+      const taskRef = doc(db, "users", currentUser.uid, "tasks", taskId);
+      await updateDoc(taskRef, { completed: !completed });
 
-  if (!permission.granted) {
+      setTasks((prev) =>
+        prev
+          .map((t) => (t.id === taskId ? { ...t, completed: !completed } : t))
+          .sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1))
+      );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (err) {
+      Alert.alert("Error", "Failed to update task.");
+    }
+  };
+
+  // === CALENDAR HELPERS ===
+  const getWeekDays = () => ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+
+  const getEmptyCells = () => {
+    const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1).getDay();
+    return Array(firstDay).fill(null);
+  };
+
+  // === RENDER ===
+  if (dataLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center px-4">
-        <View className="items-center">
-          <View className="w-24 h-24 bg-purple-100 rounded-full items-center justify-center mb-6">
-            <Ionicons name="camera" size={40} color="#8B5CF6" />
-          </View>
-          <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
-            Camera Access Required
-          </Text>
-          <Text className="text-gray-600 text-center mb-8 leading-6">
-            MindfulFlow needs camera access to monitor your blink rate and help
-            maintain your eye health during screen time.
-          </Text>
-          <TouchableOpacity
-            onPress={requestPermission}
-            className="bg-purple-600 px-8 py-4 rounded-full shadow-lg"
-          >
-            <Text className="text-white font-semibold text-lg">
-              Grant Camera Access
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView className="flex-1 bg-[#2D2D2D] justify-center items-center">
+        <ActivityIndicator size="large" color="#A3E635" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView
-        className="flex-1 px-4 py-6"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View className="mb-8">
-          <Text className="text-3xl font-bold text-gray-900 mb-2">
-            AI Blink Monitor
-          </Text>
-          <Text className="text-gray-600">
-            Advanced real-time eye health tracking with TensorFlow.js
-          </Text>
-        </View>
-
-        {/* Main Monitoring Card */}
-        <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
-          <View className="items-center mb-4">
-            <View
-              className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${
-                isMonitoring ? "bg-purple-100" : "bg-gray-100"
-              }`}
-            >
-              <Ionicons
-                name={isMonitoring ? "eye" : "eye-off"}
-                size={32}
-                color={isMonitoring ? "#8B5CF6" : "#6B7280"}
-              />
+    // <SafeAreaView className="flex-1 bg-[#2D2D2D]">
+    <SafeAreaView className="flex-1 bg-[#212121]">
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header Section - Dark Background */}
+        <View className="bg-[#212121] px-6 pt-4 pb-6">
+          {/* Top Bar */}
+          <View className="flex-row justify-between items-center mb-16">
+            <View className="flex-row items-center">
+              <Ionicons name="flower" size={28} color="#A3E635" />
+              <Text className="text-white text-xl font-bold ml-2">MindfulFlow</Text>
             </View>
+            <View className="flex-row items-center gap-4">
+              {/* <TouchableOpacity> */}
+              {/*   <Ionicons name="search" size={24} color="white" /> */}
+              {/* </TouchableOpacity> */}
+              <TouchableOpacity onPress={() => router.push("/(pages)/profile")}>
+                {/* <Image */}
+                {/*   source={{ uri: avatar }} */}
+                {/*   className="w-10 h-10 rounded-full" */}
+                {/*   style={{ borderWidth: 2, borderColor: '#A3E635' }} */}
+                {/* /> */}
+                <View className="w-10 h-10 rounded-full bg-lime-400 items-center justify-center">
+                  <Ionicons name="person" size={24} color="#212121" />
+                </View>
+              </TouchableOpacity>
 
-            <Text className="text-lg font-semibold text-gray-900 mb-2">
-              {isMonitoring ? "AI Monitoring Active" : "Blink Rate Monitor"}
-            </Text>
-
-            <Text className="text-gray-600 text-center mb-4">
-              {isMonitoring
-                ? "Analyzing your blink patterns with AI"
-                : "Start monitoring to track your eye health"}
-            </Text>
-
-            <TouchableOpacity
-              onPress={toggleMonitoring}
-              className={`px-8 py-4 rounded-full shadow-lg ${
-                isMonitoring ? "bg-red-500" : "bg-purple-600"
-              }`}
-              disabled={isInitializing}
-            >
-              <Text className="text-white font-semibold text-lg">
-                {isMonitoring ? "Stop Monitoring" : "Start AI Monitoring"}
-              </Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Camera Preview */}
-          {isMonitoring && (
-            <View className="mb-4">
-              <View className="flex-row items-center justify-center mb-3">
-                <View
-                  className={`w-3 h-3 rounded-full mr-2 ${
-                    faces.length > 0 ? "bg-green-500" : "bg-yellow-500"
-                  }`}
-                />
-                <Text className="text-sm font-medium text-gray-700">
-                  {faces.length > 0
-                    ? `Face Detected (${(detectionConfidence * 100).toFixed(0)}% confidence)`
-                    : "Searching for face..."}
-                </Text>
-              </View>
+          {/* Greeting */}
+          <View className="mb-6">
+            <Text className="text-white text-4xl font-bold mb-2">
+              Welcome back, {name}!
+            </Text>
+            <Text className="text-gray-400 text-xl">
+              Your mindful day at a glance
+            </Text>
+          </View>
 
-              <View style={styles.cameraContainer}>
-                <CameraView
-                  ref={cameraRef}
-                  style={styles.camera}
-                  facing="front"
-                >
-                  <FaceMeshOverlay
-                    faces={faces}
-                    showLandmarks={true}
-                    showBoundingBox={true}
-                    showEyeStatus={true}
+          {/* Date Info */}
+          <View className="flex-row items-center">
+            <Ionicons name="calendar-outline" size={20} color="#A3E635" />
+            <Text className="text-white text-base font-medium ml-2">
+              {format(new Date(), "EEEE, MMMM d, yyyy")}
+            </Text>
+          </View>
+        </View>
+
+        {/* Calendar Section - Beige Background */}
+        <View className="bg-lime-100 rounded-t-3xl px-6 pt-10 pb-8 z-10">
+          {/* Month Header */}
+          <View className="flex-row justify-between items-center mb-6">
+            <View>
+              <Text className="text-[#212121] text-3xl font-bold">
+                {format(selectedDate, "MMM").toUpperCase()}
+              </Text>
+              <Text className="text-gray-500 text-sm">
+                {format(selectedDate, "yyyy")}
+              </Text>
+            </View>
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                className="p-2 bg-white rounded-full"
+                onPress={() => {
+                  const prevMonth = new Date(selectedDate);
+                  prevMonth.setMonth(prevMonth.getMonth() - 1);
+                  setSelectedDate(prevMonth);
+                }}
+              >
+                <Ionicons name="chevron-back" size={20} color="#212121" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="p-2 bg-white rounded-full"
+                onPress={() => {
+                  const nextMonth = new Date(selectedDate);
+                  nextMonth.setMonth(nextMonth.getMonth() + 1);
+                  setSelectedDate(nextMonth);
+                }}
+              >
+                <Ionicons name="chevron-forward" size={20} color="#212121" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Week Days */}
+          <View className="flex-row justify-around mb-3">
+            {getWeekDays().map((day) => (
+              <Text key={day} className="text-gray-500 text-xs font-semibold w-[14.28%] text-center">
+                {day}
+              </Text>
+            ))}
+          </View>
+
+          {/* Calendar Grid */}
+          <View className="flex-row flex-wrap">
+            {getEmptyCells().map((_, i) => (
+              <View key={`empty-${i}`} className="w-[14.28%] aspect-square p-1" />
+            ))}
+            {monthDays.map((day) => (
+              <TouchableOpacity
+                key={day.date.toString()}
+                className="w-[14.28%] aspect-square p-1 items-center justify-center"
+                onPress={() => setSelectedDate(day.date)}
+              >
+                {day.hasActivity ? (
+                  <View className="bg-lime-400 rounded-full w-10 h-10 items-center justify-center shadow-sm">
+                    <Text className="text-[#2D2D2D] font-bold text-base">
+                      {format(day.date, "d")}
+                    </Text>
+                  </View>
+                ) : isToday(day.date) ? (
+                  <View className="border-2 border-[#6B2D8C] rounded-full w-10 h-10 items-center justify-center">
+                    <Text className="text-[#6B2D8C] font-bold text-base">
+                      {format(day.date, "d")}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text className="text-gray-600 text-base">
+                    {format(day.date, "d")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Today's Tasks - White Background */}
+        <View className="bg-white px-6 py-8">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-[#212121] text-2xl font-bold">Today&apos;s Tasks</Text>
+            <View className="bg-lime-400 px-3 py-1 rounded-full">
+              <Text className="text-[#2D2D2D] font-bold text-sm">
+                {tasks.filter(t => !t.completed).length} pending
+              </Text>
+            </View>
+          </View>
+
+          {tasks.length === 0 ? (
+            <View className="py-8 items-center">
+              <Ionicons name="checkmark-circle-outline" size={48} color="#A3E635" />
+              <Text className="text-gray-500 text-base mt-3">No tasks yet. Add one below!</Text>
+            </View>
+          ) : (
+            tasks.map((task) => (
+              <TouchableOpacity
+                key={task.id}
+                className="bg-white rounded-2xl mb-3 border-l-4 overflow-hidden"
+                style={{
+                  borderLeftColor: task.completed ? '#9CA3AF' : '#A3E635',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+                onPress={() => toggleTask(task.id, task.completed)}
+              >
+                <View className="flex-row items-center p-4">
+                  <View className="mr-3">
+                    <Ionicons
+                      name={task.completed ? "checkmark-circle" : "ellipse-outline"}
+                      size={28}
+                      color={task.completed ? "#9CA3AF" : "#A3E635"}
+                    />
+                  </View>
+                  <Text
+                    className={`flex-1 text-base font-medium ${task.completed ? "text-gray-400 line-through" : "text-[#2D2D2D]"
+                      }`}
+                  >
+                    {task.title}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={task.completed ? "#9CA3AF" : "#6B2D8C"}
                   />
-                </CameraView>
-              </View>
-
-              <Text className="text-xs text-gray-500 text-center mt-2">
-                {faces.length > 0
-                  ? "✓ Face tracking active with eye detection"
-                  : "⏳ Position your face in the frame"}
-              </Text>
-            </View>
+                </View>
+              </TouchableOpacity>
+            ))
           )}
+
+          {/* Add Task Input */}
+          <KeyboardAvoidingView behavior="padding">
+            <View className="flex-row items-center mt-4">
+              <TextInput
+                className="flex-1 bg-purple-100 border-purple-400 border-2 px-4 py-4 rounded-2xl text-[#2D2D2D] text-base"
+                placeholder="Add a new task..."
+                placeholderTextColor="#9CA3AF"
+                value={newTask}
+                onChangeText={setNewTask}
+                onSubmitEditing={addTask}
+              />
+              <TouchableOpacity
+                onPress={addTask}
+                className="ml-3 bg-[#6B2D8C] p-4 rounded-2xl"
+              >
+                <Ionicons name="add" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
 
-        {/* Statistics */}
-        {isMonitoring && (
-          <BlinkRateStats
-            blinkRate={blinkRate}
-            totalBlinks={totalBlinks}
-            sessionTime={sessionTime}
-            isDetecting={isMonitoring}
-            leftEyeBlinks={leftEyeBlinks}
-            rightEyeBlinks={rightEyeBlinks}
-            confidence={detectionConfidence}
-          />
-        )}
-
-        {/* Information Cards */}
-        <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-900 mb-4">
-            AI-Powered Eye Health
-          </Text>
-          <View className="space-y-4">
-            <View className="flex-row items-start">
-              <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center mr-4">
-                <Ionicons name="analytics" size={20} color="#8B5CF6" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-semibold text-gray-900 mb-1">
-                  TensorFlow.js Detection
-                </Text>
-                <Text className="text-gray-600 text-sm leading-5">
-                  Uses BlazeFace model for accurate real-time face detection and
-                  landmark tracking
-                </Text>
-              </View>
+        {/* Stats Section - Beige Background */}
+        <View className="bg-[#212121] px-6 py-8">
+          <Text className="text-white text-2xl font-bold mb-4">Your Progress</Text>
+          <View className="flex-row gap-3">
+            <View className="flex-1 bg-lime-100 rounded-2xl p-4 items-center shadow-sm">
+              <Ionicons name="flame" size={32} color="#A3E635" />
+              <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
+                {stats.streak}
+              </Text>
+              <Text className="text-gray-600 text-sm mt-1">Day Streak</Text>
             </View>
-
-            <View className="flex-row items-start">
-              <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center mr-4">
-                <Ionicons name="pulse" size={20} color="#22c55e" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-semibold text-gray-900 mb-1">
-                  Blink Rate Analysis
-                </Text>
-                <Text className="text-gray-600 text-sm leading-5">
-                  Normal: 12-25 blinks/min • Low: &lt;12 may indicate eye strain
-                </Text>
-              </View>
+            <View className="flex-1 bg-purple-300 rounded-2xl p-4 items-center shadow-sm">
+              <Ionicons name="leaf" size={32} color="#6B2D8C" />
+              <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
+                {stats.totalExercises}
+              </Text>
+              <Text className="text-gray-600 text-sm mt-1">Exercises</Text>
             </View>
-
-            <View className="flex-row items-start">
-              <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center mr-4">
-                <Ionicons name="shield-checkmark" size={20} color="#3b82f6" />
-              </View>
-              <View className="flex-1">
-                <Text className="font-semibold text-gray-900 mb-1">
-                  Privacy Protected
-                </Text>
-                <Text className="text-gray-600 text-sm leading-5">
-                  All processing happens locally on your device. No data is sent
-                  to servers
-                </Text>
-              </View>
-            </View>
+          </View>
+          <View className="mt-3 bg-white rounded-2xl p-4 items-center shadow-sm">
+            <Ionicons name="time" size={32} color="#A3E635" />
+            <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
+              {stats.screenTime}
+            </Text>
+            <Text className="text-gray-600 text-sm mt-1">Screen Time Today</Text>
           </View>
         </View>
 
-        {/* Tips for better detection */}
-        <View className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
-          <Text className="text-lg font-semibold text-gray-900 mb-4">
-            Optimization Tips
-          </Text>
-          <View className="space-y-2">
-            <Text className="text-gray-700 text-sm">
-              • Ensure bright, even lighting on your face
-            </Text>
-            <Text className="text-gray-700 text-sm">
-              • Keep your face centered and 30-60cm from camera
-            </Text>
-            <Text className="text-gray-700 text-sm">
-              • Remove glasses if they create glare or reflections
-            </Text>
-            <Text className="text-gray-700 text-sm">
-              • Sit still for more accurate detection
-            </Text>
-            <Text className="text-gray-700 text-sm">
-              • Clean your camera lens for better clarity
-            </Text>
-          </View>
-        </View>
+        {/* Bottom Spacing */}
+        <View className="h-4" />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  cameraContainer: {
-    width: CAMERA_WIDTH,
-    height: CAMERA_HEIGHT,
-    borderRadius: 16,
-    overflow: "hidden",
-    alignSelf: "center",
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
-  },
-  camera: {
-    flex: 1,
-  },
-});
