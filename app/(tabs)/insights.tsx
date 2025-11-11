@@ -138,15 +138,20 @@ export default function Insights() {
       const screenHours = totalScreenTime / 60;
       const breaksRatio = totalExercises > 0 ? Math.min(totalExercises / Math.max(screenHours, 1), 3) : 0;
 
-      const wellnessScore = Math.min(
-        100,
-        Math.round(
-          (totalExercises * 15) +
-          (100 - screenHours * 8) +
-          (avgMood * 12) +
-          (breaksRatio * 15)
-        )
+
+      const exerciseScore = Math.min(totalExercises / 5, 1);
+      const screenScore = 1 - Math.min(screenHours / 5, 1);
+      const moodScore = avgMood / 10;
+      const breaksScore = Math.min(breaksRatio, 1);
+
+      const score = Math.round(
+        (exerciseScore * 35) +
+        (screenScore * 30) +
+        (moodScore * 20) +
+        (breaksScore * 15)
       );
+
+      const wellnessScore = Math.min(100, Math.max(0, score));
 
       const aiReport = progress?.aiReport;
 

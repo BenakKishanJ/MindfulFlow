@@ -41,7 +41,7 @@ interface DayActivity {
 }
 
 export default function Home() {
-  const { currentUser, loading: authLoading } = useAuth();
+  const { currentUser, userProfile, loading: authLoading, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
@@ -163,7 +163,7 @@ export default function Home() {
     );
   }
 
-  const name = currentUser.displayName || "User";
+  const name = currentUser?.displayName || userProfile?.displayName || "User";
   const avatar =
     currentUser.photoURL ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=BFFF00&color=2D2D2D&size=128&bold=true`;
@@ -439,14 +439,14 @@ export default function Home() {
         <View className="bg-[#212121] px-6 py-8">
           <Text className="text-white text-2xl font-bold mb-4">Your Progress</Text>
           <View className="flex-row gap-3">
-            <View className="flex-1 bg-lime-100 rounded-2xl p-4 items-center shadow-sm">
+            <View className="flex-1 bg-lime-100 rounded-2xl p-4 items-center shadow-sm border-2 border-lime-300">
               <Ionicons name="flame" size={32} color="#A3E635" />
               <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
                 {stats.streak}
               </Text>
               <Text className="text-gray-600 text-sm mt-1">Day Streak</Text>
             </View>
-            <View className="flex-1 bg-purple-300 rounded-2xl p-4 items-center shadow-sm">
+            <View className="flex-1 bg-purple-300 rounded-2xl p-4 items-center shadow-sm border-2 border-purple-400">
               <Ionicons name="leaf" size={32} color="#6B2D8C" />
               <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
                 {stats.totalExercises}
@@ -469,3 +469,4 @@ export default function Home() {
     </SafeAreaView>
   );
 }
+
