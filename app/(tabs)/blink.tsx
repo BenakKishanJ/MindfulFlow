@@ -1,32 +1,66 @@
 // app/blink.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, useCameraDevice, useFrameProcessor } from 'react-native-vision-camera';
-import { scanFaces } from 'vision-camera-face-detector';
-import { scheduleOnRN } from 'react-native-worklets'; // Fixed import
+import { Camera, useCameraDevice, useCameraFormat } from 'react-native-vision-camera';
+import FaceDetection from '@react-native-ml-kit/face-detection';
 import BlinkRateStats from '@/components/BlinkRateStats';
 
-// Use the library's Face type directly
-import type { Face } from 'vision-camera-face-detector';
+// Let's check what the actual Face type looks like by logging it
+// For now, let's create a more flexible interface
+interface DetectedFace {
+  leftEyeOpenProbability: number;
+  rightEyeOpenProbability: number;
+  // ML Kit might use different property names for bounds
+  frame?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  bounds?: {
+    origin: {
+      x: number;
+      y: number;
+    };
+    size: {
+      width: number;
+      height: number;
+    };
+  };
+  // Or it might have direct position properties
+  left?: number;
+  top?: number;
+  width?: number;
+  height?: number;
+  smilingProbability?: number;
+  trackingID?: number;
+}
 
 export default function BlinkMonitor() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [faces, setFaces] = useState<Face[]>([]);
+  const [faces, setFaces] = useState<DetectedFace[]>([]);
   const [blinkRate, setBlinkRate] = useState(0);
   const [totalBlinks, setTotalBlinks] = useState(0);
   const [sessionTime, setSessionTime] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fixed: Use useCameraDevice hook instead of useCameraDevices
   const device = useCameraDevice('front');
   const cameraRef = useRef<Camera>(null);
 
-  // Refs for tracking data across renders without triggering re-renders
+  // Optimize camera format for faster processing
+  const format = useCameraFormat(device, [
+    { videoResolution: { width: 640, height: 480 } },
+    { fps: 30 },
+  ]);
+
+  // Refs for tracking data
   const blinkDataRef = useRef<{ timestamp: number }[]>([]);
   const lastBlinkStateRef = useRef<{ left: boolean; right: boolean }>({ left: true, right: true });
   const sessionStartRef = useRef<number>(0);
+  const lastDetectionTimeRef = useRef<number>(0);
 
   // 1. Permission handling
   useEffect(() => {
@@ -53,73 +87,129 @@ export default function BlinkMonitor() {
     };
   }, [isMonitoring]);
 
-  // 3. Blink rate calculation effect
+  // 3. Blink rate calculation
   useEffect(() => {
     const interval = setInterval(() => {
       const currentTime = Date.now();
-      // Filter blinks that occurred in the last minute
       blinkDataRef.current = blinkDataRef.current.filter(
         (data) => currentTime - data.timestamp < 60000
       );
-      // Update blink rate (blinks per minute)
       setBlinkRate(blinkDataRef.current.length);
-    }, 2000); // Update every 2 seconds
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [isMonitoring]);
 
-  // 4. Blink detection logic - Fixed: Moved before frame processor
-  const processBlink = (face: Face) => {
+  // 4. Blink detection logic
+  const processBlink = useCallback((face: DetectedFace) => {
     const currentTime = Date.now();
 
-    // Use probabilities from ML Kit (0 = closed, 1 = open)
-    const EYE_OPEN_THRESHOLD = 0.3; // Slightly lower threshold for better detection
-    const leftEyeOpen = (face.leftEyeOpenProbability ?? 1) > EYE_OPEN_THRESHOLD; // Added null coalescing
-    const rightEyeOpen = (face.rightEyeOpenProbability ?? 1) > EYE_OPEN_THRESHOLD;
+    const EYE_OPEN_THRESHOLD = 0.3;
+    const leftEyeOpen = face.leftEyeOpenProbability > EYE_OPEN_THRESHOLD;
+    const rightEyeOpen = face.rightEyeOpenProbability > EYE_OPEN_THRESHOLD;
 
     const wasLeftOpen = lastBlinkStateRef.current.left;
     const wasRightOpen = lastBlinkStateRef.current.right;
 
-    // Detect blink: eye was open and now closed
     const leftBlink = !leftEyeOpen && wasLeftOpen;
     const rightBlink = !rightEyeOpen && wasRightOpen;
 
-    // Register a blink if at least one eye blinks
-    // Fixed: Added debounce to prevent multiple detections
     const timeSinceLastBlink = blinkDataRef.current.length > 0
       ? currentTime - blinkDataRef.current[blinkDataRef.current.length - 1].timestamp
       : 1000;
 
-    if ((leftBlink || rightBlink) && timeSinceLastBlink > 200) { // 200ms debounce
+    if ((leftBlink || rightBlink) && timeSinceLastBlink > 200) {
       setTotalBlinks(prev => prev + 1);
       blinkDataRef.current.push({ timestamp: currentTime });
     }
 
     lastBlinkStateRef.current = { left: leftEyeOpen, right: rightEyeOpen };
-  };
+  }, []);
 
-  // 5. Core Frame Processor for face and blink detection
-  const frameProcessor = useFrameProcessor((frame) => {
-    'worklet';
+  // 5. Face detection handler
+  const detectFaces = useCallback(async () => {
+    if (!cameraRef.current || isProcessing) return;
+
+    const currentTime = Date.now();
+    if (currentTime - lastDetectionTimeRef.current < 300) {
+      return;
+    }
+
+    setIsProcessing(true);
+    lastDetectionTimeRef.current = currentTime;
+
     try {
-      const detectedFaces = scanFaces(frame);
+      // Capture photo for face detection
+      const photo = await cameraRef.current.takePhoto({});
+
+      if (!photo.path) {
+        throw new Error('Photo path not available');
+      }
+
+      // Configure face detection options
+      const options = {
+        performanceMode: 'fast' as const,
+        landmarkMode: 'all' as const,
+        contourMode: 'none' as const,
+        classificationMode: 'all' as const,
+        minFaceSize: 0.1,
+      };
+
+      // Detect faces in the captured photo
+      const detectedFaces = await FaceDetection.detect(`file://${photo.path}`, options);
+
+      // Log the actual face structure to debug
+      if (detectedFaces.length > 0) {
+        console.log('Face structure:', JSON.stringify(detectedFaces[0], null, 2));
+      }
 
       if (detectedFaces.length > 0) {
         const primaryFace = detectedFaces[0];
 
-        scheduleOnRN(() => {
-          setFaces([primaryFace]);
-          processBlink(primaryFace);
-        });
+        // Create a processed face with the properties we actually need for blink detection
+        // We only need eye probabilities for blink detection
+        const processedFace: DetectedFace = {
+          leftEyeOpenProbability: primaryFace.leftEyeOpenProbability ?? 1,
+          rightEyeOpenProbability: primaryFace.rightEyeOpenProbability ?? 1,
+          smilingProbability: primaryFace.smilingProbability,
+          trackingID: primaryFace.trackingID,
+          // Add any bounds properties that might exist for debugging
+          frame: (primaryFace as any).frame,
+          bounds: (primaryFace as any).bounds,
+          left: (primaryFace as any).left,
+          top: (primaryFace as any).top,
+          width: (primaryFace as any).width,
+          height: (primaryFace as any).height,
+        };
+
+        setFaces([processedFace]);
+        processBlink(processedFace);
       } else {
-        scheduleOnRN(() => {
-          setFaces([]);
-        });
+        setFaces([]);
       }
     } catch (error) {
-      console.log('Frame processor error:', error);
+      console.log('Face detection error:', error);
+    } finally {
+      setIsProcessing(false);
     }
-  }, []);
+  }, [isProcessing, processBlink]);
+
+  // 6. Continuous face detection when monitoring
+  useEffect(() => {
+    let detectionInterval: ReturnType<typeof setInterval> | null = null;
+
+    if (isMonitoring && hasPermission) {
+      detectionInterval = setInterval(() => {
+        detectFaces();
+      }, 500);
+    }
+
+    return () => {
+      if (detectionInterval) {
+        clearInterval(detectionInterval);
+      }
+    };
+  }, [isMonitoring, hasPermission, detectFaces]);
 
   const startMonitoring = () => {
     setIsMonitoring(true);
@@ -205,7 +295,7 @@ export default function BlinkMonitor() {
             </Text>
             <Text style={styles.monitoringSubtitle}>
               {isMonitoring
-                ? "Tracking your blink rate in real-time"
+                ? `Tracking your blink rate • ${faces.length > 0 ? 'Face detected' : 'Searching...'}`
                 : "Start monitoring to begin detection"}
             </Text>
 
@@ -223,23 +313,23 @@ export default function BlinkMonitor() {
           {isMonitoring && (
             <View style={styles.cameraSection}>
               <Text style={styles.cameraLabel}>
-                {faces.length > 0 ? "✅ Face detected" : "⏳ Searching for face..."}
+                {faces.length > 0 ? "✅ Face detected - Blink detection active" : "⏳ Searching for face..."}
               </Text>
               <View style={styles.cameraContainer}>
                 <Camera
                   ref={cameraRef}
                   style={StyleSheet.absoluteFill}
                   device={device}
+                  format={format}
                   isActive={isMonitoring}
-                  frameProcessor={frameProcessor}
-                  video={true}
+                  photo={true}
+                  video={false}
                   audio={false}
-                  photo={false}
                   resizeMode="cover"
                 />
               </View>
               <Text style={styles.cameraHint}>
-                Ensure good lighting and face the camera directly
+                {isProcessing ? "Processing..." : "Ensure good lighting and face the camera directly"}
               </Text>
             </View>
           )}
@@ -280,9 +370,9 @@ export default function BlinkMonitor() {
             <View style={styles.infoItem}>
               <Ionicons name="eye" size={20} color="#a3e635" />
               <View style={styles.infoText}>
-                <Text style={styles.infoItemTitle}>Why It Matters</Text>
+                <Text style={styles.infoItemTitle}>Detection Technology</Text>
                 <Text style={styles.infoItemDescription}>
-                  Blinking keeps eyes moist and prevents digital eye strain
+                  Powered by Google ML Kit for accurate eye tracking
                 </Text>
               </View>
             </View>
@@ -293,6 +383,7 @@ export default function BlinkMonitor() {
   );
 }
 
+// Your styles remain exactly the same...
 const styles = StyleSheet.create({
   container: {
     flex: 1,

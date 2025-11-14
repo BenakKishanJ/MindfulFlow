@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.benak.MindfulFlow"
     },
     "web": {
       "bundler": "metro",
@@ -28,13 +29,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "react-native-vision-camera"
     ],
     "fonts": [
       "./assets/fonts/PPMori-Extralight.otf",
@@ -42,10 +44,16 @@
       "./assets/fonts/PPMori-Regular.otf",
       "./assets/fonts/PPMori-RegularItalic.otf",
       "./assets/fonts/PPMori-SemiBold.otf",
-      "./assets/fonts/PPMori-SemiBoldItalic.otf",
+      "./assets/fonts/PPMori-SemiBoldItalic.otf"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "964199f4-9c6a-4442-84cd-72fb6eab3396"
+      }
     }
   }
 }
