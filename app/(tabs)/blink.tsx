@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, useCameraDevice, useCameraFormat } from 'react-native-vision-camera';
-import FaceDetection from '@react-native-ml-kit/face-detection';
+import { Camera, useCameraDevice, useCameraFormat, useFrameProcessor, runAsync } from 'react-native-vision-camera';
+import { scanFaces } from 'vision-camera-face-detector';
 import BlinkRateStats from '@/components/BlinkRateStats';
 
 // Let's check what the actual Face type looks like by logging it
@@ -45,7 +45,7 @@ export default function BlinkMonitor() {
   const [blinkRate, setBlinkRate] = useState(0);
   const [totalBlinks, setTotalBlinks] = useState(0);
   const [sessionTime, setSessionTime] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
+
 
   const device = useCameraDevice('front');
   const cameraRef = useRef<Camera>(null);
@@ -60,7 +60,7 @@ export default function BlinkMonitor() {
   const blinkDataRef = useRef<{ timestamp: number }[]>([]);
   const lastBlinkStateRef = useRef<{ left: boolean; right: boolean }>({ left: true, right: true });
   const sessionStartRef = useRef<number>(0);
-  const lastDetectionTimeRef = useRef<number>(0);
+
 
   // 1. Permission handling
   useEffect(() => {
@@ -126,90 +126,27 @@ export default function BlinkMonitor() {
     lastBlinkStateRef.current = { left: leftEyeOpen, right: rightEyeOpen };
   }, []);
 
-  // 5. Face detection handler
-  const detectFaces = useCallback(async () => {
-    if (!cameraRef.current || isProcessing) return;
-
-    const currentTime = Date.now();
-    if (currentTime - lastDetectionTimeRef.current < 300) {
-      return;
-    }
-
-    setIsProcessing(true);
-    lastDetectionTimeRef.current = currentTime;
-
-    try {
-      // Capture photo for face detection
-      const photo = await cameraRef.current.takePhoto({});
-
-      if (!photo.path) {
-        throw new Error('Photo path not available');
-      }
-
-      // Configure face detection options
-      const options = {
-        performanceMode: 'fast' as const,
-        landmarkMode: 'all' as const,
-        contourMode: 'none' as const,
-        classificationMode: 'all' as const,
-        minFaceSize: 0.1,
-      };
-
-      // Detect faces in the captured photo
-      const detectedFaces = await FaceDetection.detect(`file://${photo.path}`, options);
-
-      // Log the actual face structure to debug
-      if (detectedFaces.length > 0) {
-        console.log('Face structure:', JSON.stringify(detectedFaces[0], null, 2));
-      }
-
-      if (detectedFaces.length > 0) {
-        const primaryFace = detectedFaces[0];
-
-        // Create a processed face with the properties we actually need for blink detection
-        // We only need eye probabilities for blink detection
+  // Frame processor for real-time face detection
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet';
+    const faces = scanFaces(frame);
+    if (faces.length > 0) {
+      const primaryFace = faces[0];
+      runAsync(frame, () => {
         const processedFace: DetectedFace = {
           leftEyeOpenProbability: primaryFace.leftEyeOpenProbability ?? 1,
           rightEyeOpenProbability: primaryFace.rightEyeOpenProbability ?? 1,
           smilingProbability: primaryFace.smilingProbability,
-          trackingID: primaryFace.trackingID,
-          // Add any bounds properties that might exist for debugging
-          frame: (primaryFace as any).frame,
-          bounds: (primaryFace as any).bounds,
-          left: (primaryFace as any).left,
-          top: (primaryFace as any).top,
-          width: (primaryFace as any).width,
-          height: (primaryFace as any).height,
         };
-
         setFaces([processedFace]);
         processBlink(processedFace);
-      } else {
+      });
+    } else {
+      runAsync(frame, () => {
         setFaces([]);
-      }
-    } catch (error) {
-      console.log('Face detection error:', error);
-    } finally {
-      setIsProcessing(false);
+      });
     }
-  }, [isProcessing, processBlink]);
-
-  // 6. Continuous face detection when monitoring
-  useEffect(() => {
-    let detectionInterval: ReturnType<typeof setInterval> | null = null;
-
-    if (isMonitoring && hasPermission) {
-      detectionInterval = setInterval(() => {
-        detectFaces();
-      }, 500);
-    }
-
-    return () => {
-      if (detectionInterval) {
-        clearInterval(detectionInterval);
-      }
-    };
-  }, [isMonitoring, hasPermission, detectFaces]);
+  }, [processBlink]);
 
   const startMonitoring = () => {
     setIsMonitoring(true);
@@ -322,14 +259,15 @@ export default function BlinkMonitor() {
                   device={device}
                   format={format}
                   isActive={isMonitoring}
-                  photo={true}
+                  photo={false}
                   video={false}
                   audio={false}
                   resizeMode="cover"
+                  frameProcessor={frameProcessor}
                 />
               </View>
               <Text style={styles.cameraHint}>
-                {isProcessing ? "Processing..." : "Ensure good lighting and face the camera directly"}
+                Ensure good lighting and face the camera directly
               </Text>
             </View>
           )}
