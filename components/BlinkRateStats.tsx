@@ -23,10 +23,10 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
   };
 
   const getBlinkStatus = (rate: number) => {
-    if (rate >= 15 && rate <= 20) return { status: "Normal", color: "#22c55e", icon: "checkmark-circle" };
-    if (rate < 10) return { status: "Low - Eye Strain", color: "#ef4444", icon: "warning" };
-    if (rate < 15) return { status: "Slightly Low", color: "#f59e0b", icon: "alert-circle" };
-    return { status: "High", color: "#f59e0b", icon: "alert-circle" };
+    if (rate >= 15 && rate <= 20) return { status: "Optimal", color: "#a3e635", icon: "checkmark-circle" as const };
+    if (rate < 10) return { status: "Low - Eye Strain", color: "#dc2626", icon: "warning" as const };
+    if (rate < 15) return { status: "Slightly Low", color: "#f59e0b", icon: "alert-circle" as const };
+    return { status: "High", color: "#f59e0b", icon: "alert-circle" as const };
   };
 
   const status = getBlinkStatus(blinkRate);
@@ -35,7 +35,7 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
     <View style={styles.container}>
       {/* Status Indicator */}
       <View style={styles.statusSection}>
-        <Ionicons name={status.icon as any} size={32} color={status.color} />
+        <Ionicons name={status.icon} size={32} color={status.color} />
         <Text style={[styles.statusText, { color: status.color }]}>
           {status.status}
         </Text>
@@ -97,15 +97,17 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     borderRadius: 16,
     padding: 20,
     marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#374151',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   statusSection: {
     flexDirection: 'row',
@@ -129,25 +131,27 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#ffffff',
   },
   statLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#a3e635',
     marginTop: 4,
+    fontWeight: '500',
   },
   healthSection: {
     marginBottom: 20,
   },
   healthLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#a3e635',
     marginBottom: 8,
     textAlign: 'center',
+    fontWeight: '500',
   },
   healthBar: {
     height: 8,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#374151',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
@@ -162,33 +166,33 @@ const styles = StyleSheet.create({
   },
   healthMin: {
     fontSize: 10,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   healthOptimal: {
     fontSize: 10,
-    color: '#22c55e',
+    color: '#a3e635',
     fontWeight: '600',
   },
   healthMax: {
     fontSize: 10,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   tipsSection: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#1f2937',
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#3b82f6',
+    borderLeftColor: '#a3e635',
   },
   tipsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e40af',
+    color: '#a3e635',
     marginBottom: 8,
   },
   tipsText: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#d1d5db',
     lineHeight: 18,
   },
 });
