@@ -37,22 +37,8 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="blink"
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="eye" focused={focused} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="exercises"
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="fitness-outline" focused={focused} />
-            ),
-          }}
-        />
+
+
         <Tabs.Screen
           name="log"
           options={{
@@ -69,6 +55,23 @@ export default function TabLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="exercises"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="fitness-outline" focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="blink"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="eye" focused={focused} />
+            ),
+          }}
+        />
+
       </Tabs>
 
       {/* === FLOATING ACTION BUTTON (FAB) === */}
@@ -107,7 +110,7 @@ function FAB({ onPress }: { onPress: () => void }) {
         className="w-16 h-16 rounded-full items-center justify-center border-2"
         style={{
           // Lime background on press
-          backgroundColor: undefined,
+          backgroundColor: "#A3E635",
         }}
         // Inline press style override
         onPressIn={(e) => {
@@ -122,9 +125,9 @@ function FAB({ onPress }: { onPress: () => void }) {
         }}
       >
         {/* <View className="w-14 h-14 rounded-full overflow-hidden border-2 border014 border-[#212121]"> */}
-        <View className="w-24 h-24 rounded-full overflow-hidden">
+        <View className="w-20 h-20 rounded-full overflow-hidden border-4 border-purple-500">
           <Image
-            source={require("@/assets/images/ai_coach.png")}
+            source={require("@/assets/images/ai-profile.jpg")}
             className="w-full h-full"
             resizeMode="cover"
           />

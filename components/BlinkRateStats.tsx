@@ -23,71 +23,75 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
   };
 
   const getBlinkStatus = (rate: number) => {
-    if (rate >= 15 && rate <= 20) return { status: "Optimal", color: "#a3e635", icon: "checkmark-circle" as const };
-    if (rate < 10) return { status: "Low - Eye Strain", color: "#dc2626", icon: "warning" as const };
-    if (rate < 15) return { status: "Slightly Low", color: "#f59e0b", icon: "alert-circle" as const };
-    return { status: "High", color: "#f59e0b", icon: "alert-circle" as const };
+    if (rate >= 15 && rate <= 20)
+      return { status: "Optimal", color: "#A3E635", icon: "checkmark-circle" as const };
+    if (rate < 10)
+      return { status: "Low – Risk of Strain", color: "#ef4444", icon: "warning" as const };
+    if (rate < 15)
+      return { status: "Slightly Low", color: "#f97316", icon: "alert-circle" as const };
+    return { status: "High – Relax Eyes", color: "#f59e0b", icon: "alert-circle" as const };
   };
 
-  const status = getBlinkStatus(blinkRate);
+  const { status, color, icon } = getBlinkStatus(blinkRate);
+  const progress = Math.min((blinkRate / 25) * 100, 100);
 
   return (
     <View style={styles.container}>
-      {/* Status Indicator */}
-      <View style={styles.statusSection}>
-        <Ionicons name={status.icon} size={32} color={status.color} />
-        <Text style={[styles.statusText, { color: status.color }]}>
-          {status.status}
-        </Text>
+      {/* Header Status */}
+      <View style={styles.header}>
+        <View style={styles.statusRow}>
+          <Ionicons name={icon} size={28} color={color} />
+          <Text style={[styles.statusText, { color }]}>{status}</Text>
+        </View>
+        <Text style={styles.title}>Blink Rate Monitor</Text>
       </View>
 
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
-        <View style={styles.statItem}>
+        <View style={styles.statCard}>
           <Text style={styles.statValue}>{blinkRate}</Text>
           <Text style={styles.statLabel}>Blinks/min</Text>
         </View>
-
-        <View style={styles.statItem}>
+        <View style={styles.statCard}>
           <Text style={styles.statValue}>{totalBlinks}</Text>
           <Text style={styles.statLabel}>Total Blinks</Text>
         </View>
-
-        <View style={styles.statItem}>
+        <View style={styles.statCard}>
           <Text style={styles.statValue}>{formatTime(sessionTime)}</Text>
-          <Text style={styles.statLabel}>Duration</Text>
+          <Text style={styles.statLabel}>Session Time</Text>
         </View>
       </View>
 
-      {/* Health Indicator */}
+      {/* Health Progress Bar */}
       <View style={styles.healthSection}>
-        <Text style={styles.healthLabel}>Eye Health Indicator</Text>
-        <View style={styles.healthBar}>
+        <Text style={styles.healthTitle}>Eye Health Score</Text>
+        <View style={styles.progressBar}>
           <View
             style={[
-              styles.healthProgress,
-              {
-                width: `${Math.min((blinkRate / 25) * 100, 100)}%`,
-                backgroundColor: status.color
-              }
+              styles.progressFill,
+              { width: `${progress}%`, backgroundColor: color },
             ]}
           />
         </View>
-        <View style={styles.healthLabels}>
-          <Text style={styles.healthMin}>0</Text>
-          <Text style={styles.healthOptimal}>15-20</Text>
-          <Text style={styles.healthMax}>25+</Text>
+        <View style={styles.progressLabels}>
+          <Text style={styles.labelLow}>Low</Text>
+          <Text style={styles.labelOptimal}>Optimal (15–20)</Text>
+          <Text style={styles.labelHigh}>High</Text>
         </View>
       </View>
 
-      {/* Tips based on status */}
+      {/* Tips (only when not detecting) */}
       {!isDetecting && (
-        <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>Monitoring Tips</Text>
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <Ionicons name="bulb-outline" size={20} color="#A3E635" />
+            <Text style={styles.tipsTitle}>Pro Tips for Better Detection</Text>
+          </View>
           <Text style={styles.tipsText}>
-            • Ensure good lighting on your face{"\n"}
-            • Position your face within the camera frame{"\n"}
-            • Remove glasses if they cause reflections
+            • Sit in a well-lit room{"\n"}
+            • Keep your full face in the frame{"\n"}
+            • Remove glasses if they reflect light{"\n"}
+            • Avoid moving too quickly
           </Text>
         </View>
       )}
@@ -97,103 +101,127 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#111827',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: 20,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: '#374151',
+    marginVertical: 12,
+    marginHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  statusSection: {
+  header: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    gap: 8,
+    gap: 10,
+    marginBottom: 8,
   },
   statusText: {
     fontSize: 18,
     fontWeight: '600',
   },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  statItem: {
+  statCard: {
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    minWidth: 90,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#1A1A1A',
   },
   statLabel: {
     fontSize: 12,
-    color: '#a3e635',
+    color: '#6B7280',
     marginTop: 4,
     fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   healthSection: {
     marginBottom: 20,
   },
-  healthLabel: {
-    fontSize: 14,
-    color: '#a3e635',
-    marginBottom: 8,
+  healthTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
     textAlign: 'center',
-    fontWeight: '500',
+    marginBottom: 12,
   },
-  healthBar: {
-    height: 8,
-    backgroundColor: '#374151',
-    borderRadius: 4,
+  progressBar: {
+    height: 12,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
     overflow: 'hidden',
     marginBottom: 8,
   },
-  healthProgress: {
+  progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
-  healthLabels: {
+  progressLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
-  healthMin: {
-    fontSize: 10,
-    color: '#9ca3af',
+  labelLow: {
+    fontSize: 11,
+    color: '#6B7280',
   },
-  healthOptimal: {
-    fontSize: 10,
-    color: '#a3e635',
+  labelOptimal: {
+    fontSize: 11,
+    color: '#A3E635',
     fontWeight: '600',
   },
-  healthMax: {
-    fontSize: 10,
-    color: '#9ca3af',
+  labelHigh: {
+    fontSize: 11,
+    color: '#6B7280',
   },
-  tipsSection: {
-    backgroundColor: '#1f2937',
+  tipsCard: {
+    backgroundColor: '#F0FDF4',
     padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#a3e635',
+    borderRadius: 16,
+    borderLeftWidth: 5,
+    borderLeftColor: '#A3E635',
   },
-  tipsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#a3e635',
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 8,
   },
+  tipsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
   tipsText: {
-    fontSize: 12,
-    color: '#d1d5db',
-    lineHeight: 18,
+    fontSize: 13.5,
+    color: '#4B5563',
+    lineHeight: 20,
   },
 });
 

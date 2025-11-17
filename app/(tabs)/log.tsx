@@ -1,7 +1,8 @@
 // app/(tabs)/log.tsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   View,
+  View as RNView,
   Text,
   TouchableOpacity,
   TextInput,
@@ -12,6 +13,8 @@ import {
   ActivityIndicator,
   Modal,
   Animated,
+  PanResponder,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +32,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { format, startOfDay } from "date-fns";
+import TimePicker from "@/components/TimePicker"; // Updated import
 
 const TAGS = [
   "Social",
@@ -44,14 +48,14 @@ const TAGS = [
 type Tag = (typeof TAGS)[number];
 
 const TAG_COLORS: Record<Tag, string> = {
-  Social: "bg-purple-100",
-  Games: "bg-red-100",
-  Work: "bg-blue-100",
-  Study: "bg-indigo-100",
-  Essential: "bg-gray-100",
-  Productive: "bg-lime-100",
-  Entertainment: "bg-pink-100",
-  Other: "bg-zinc-100",
+  Social: "bg-purple-100 border-purple-300",
+  Games: "bg-red-100 border-red-300",
+  Work: "bg-blue-100 border-blue-300",
+  Study: "bg-indigo-100 border-indigo-300",
+  Essential: "bg-gray-100 border-gray-300",
+  Productive: "bg-lime-100 border-lime-300",
+  Entertainment: "bg-pink-100 border-pink-300",
+  Other: "bg-zinc-100 border-zinc-300",
 };
 
 const TAG_TEXT_COLORS: Record<Tag, string> = {
@@ -95,34 +99,6 @@ const formatDuration = (mins: number): string => {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 };
 
-// Custom Slider Component
-const CustomSlider = ({
-  value,
-  onValueChange,
-  onSlidingComplete,
-  minimumValue = 0,
-  maximumValue = 480,
-}: {
-  value: number;
-  onValueChange: (value: number) => void;
-  onSlidingComplete: (value: number) => void;
-  minimumValue?: number;
-  maximumValue?: number;
-}) => {
-  const percentage = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
-
-  return (
-    <View className="w-full py-2">
-      <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
-        <View
-          className="h-full bg-lime-500 rounded-full"
-          style={{ width: `${percentage}%` }}
-        />
-      </View>
-    </View>
-  );
-};
-
 export default function LogScreen() {
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -136,9 +112,12 @@ export default function LogScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAppName, setNewAppName] = useState("");
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedAppForTime, setSelectedAppForTime] = useState<string | null>(null);
 
   const today = startOfDay(new Date());
   const todayKey = format(today, "yyyy-MM-dd");
+
   // Fade in animation
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -151,7 +130,6 @@ export default function LogScreen() {
   // Load data
   useEffect(() => {
     if (!currentUser) {
-      // If there's no user, stop loading so UI doesn't hang on the spinner
       setIsLoading(false);
       return;
     }
@@ -208,6 +186,7 @@ export default function LogScreen() {
       cancelled = true;
     };
   }, [currentUser, todayKey]);
+
   const totalTime = useMemo(() => {
     return Object.values(todayLogs).reduce((sum, log) => sum + log.durationMinutes, 0);
   }, [todayLogs]);
@@ -263,25 +242,47 @@ export default function LogScreen() {
       Alert.alert("Error", err.message || "Failed to save.");
     }
   };
-  // Update Duration
-  const updateDuration = (appName: string, hours: number, minutes: number) => {
+
+  // Update Duration with TimePicker
+  const handleTimePickerConfirm = (hours: number, minutes: number) => {
+    if (!selectedAppForTime) return;
+
     const totalMinutes = Math.min(Math.max(hours * 60 + minutes, 0), 1440);
-    saveLog(appName, { durationMinutes: totalMinutes });
+    saveLog(selectedAppForTime, { durationMinutes: totalMinutes });
 
     setTodayLogs((prev) => ({
       ...prev,
-      [appName]: {
-        ...(prev[appName] || {
-          appName,
+      [selectedAppForTime]: {
+        ...(prev[selectedAppForTime] || {
+          appName: selectedAppForTime,
           durationMinutes: 0,
           mood: 3,
           note: "",
-          tag: trackedApps.find(a => a.name === appName)?.tag || "Other",
+          tag: trackedApps.find(a => a.name === selectedAppForTime)?.tag || "Other",
         }),
         durationMinutes: totalMinutes,
       },
     }));
+
+    setShowTimePicker(false);
+    setSelectedAppForTime(null);
   };
+
+  const handleTimePickerCancel = () => {
+    setShowTimePicker(false);
+    setSelectedAppForTime(null);
+  };
+
+  const openTimePicker = (appName: string) => {
+    const log = todayLogs[appName];
+    const currentDuration = log?.durationMinutes || 0;
+    const currentHours = Math.floor(currentDuration / 60);
+    const currentMinutes = currentDuration % 60;
+
+    setSelectedAppForTime(appName);
+    setShowTimePicker(true);
+  };
+
   // Add New App
   const handleAddApp = async () => {
     const name = newAppName.trim();
@@ -308,8 +309,8 @@ export default function LogScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#84cc16" />
+      <SafeAreaView className="flex-1 bg-lime-100 justify-center items-center">
+        <ActivityIndicator size="large" color="#A3E635" />
       </SafeAreaView>
     );
   }
@@ -322,445 +323,271 @@ export default function LogScreen() {
   })();
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-lime-100">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          <Animated.View style={{ opacity: fadeAnim }} className="px-5 py-6">
+          <Animated.View style={{ opacity: fadeAnim }} className="px-6 pt-8">
             {/* Header */}
-            <Text className="text-[#212121] text-4xl font-bold mb-2">
+            <Text className="text-[#1A1A1A] text-3xl font-bold mb-2">
               {greeting}!
             </Text>
-            <Text className="text-gray-600 text-lg mb-6">
+            <Text className="text-gray-600 text-base mb-8">
               Track your digital wellness in seconds
             </Text>
 
             {/* Stats Cards */}
-            <View className="mb-6">
-              <View className="flex-row gap-3 mb-3">
-                {/* Total Time */}
-                <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Ionicons name="time-outline" size={24} color="#84cc16" />
-                    <Text className="text-2xl font-bold text-[#212121]">
-                      {formatDuration(totalTime)}
-                    </Text>
-                  </View>
-                  <Text className="text-gray-600 text-xs">Total Today</Text>
+            <View className="flex-row gap-3 mb-8">
+              <View className="flex-1 bg-white rounded-2xl p-5 items-center shadow-sm border border-gray-200">
+                <View className="w-14 h-14 bg-[#A3E635]/10 rounded-2xl items-center justify-center mb-3">
+                  <Ionicons name="flame" size={32} color="#A3E635" />
                 </View>
-
-                {/* Apps Logged */}
-                <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Ionicons name="apps-outline" size={24} color="#a855f7" />
-                    <Text className="text-2xl font-bold text-[#212121]">
-                      {Object.keys(todayLogs).length}
-                    </Text>
-                  </View>
-                  <Text className="text-gray-600 text-xs">Apps Logged</Text>
-                </View>
+                <Text className="text-[#1A1A1A] text-3xl font-bold">{streak}</Text>
+                <Text className="text-gray-600 text-sm mt-1 uppercase tracking-wider">
+                  Streak
+                </Text>
               </View>
-
-              {/* Streak Card */}
-              {streak > 0 && (
-                <View className="bg-lime-400 rounded-2xl p-4 shadow-sm">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center">
-                      <Ionicons name="flame" size={24} color="white" />
-                      <Text className="text-white text-xl font-bold ml-2">
-                        {streak} day{streak !== 1 ? "s" : ""} streak!
-                      </Text>
-                    </View>
-                    <Text className="text-white text-2xl">Fire</Text>
-                  </View>
+              <View className="flex-1 bg-white rounded-2xl p-5 items-center shadow-sm border border-gray-200">
+                <View className="w-14 h-14 bg-[#A3E635]/10 rounded-2xl items-center justify-center mb-3">
+                  <Ionicons name="time" size={32} color="#A3E635" />
                 </View>
-              )}
+                <Text className="text-[#1A1A1A] text-3xl font-bold">
+                  {formatDuration(totalTime)}
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1 uppercase tracking-wider">
+                  Total Time
+                </Text>
+              </View>
             </View>
-
-            {/* Guide Toggle */}
-            <TouchableOpacity
-              onPress={() => {
-                setShowGuide(!showGuide);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 flex-row items-center justify-between"
-            >
-              <Text className="text-[#212121] font-semibold">
-                How to find your screen time
-              </Text>
-              <Ionicons
-                name={showGuide ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="#9ca3af"
-              />
-            </TouchableOpacity>
-
-            {showGuide && (
-              <View className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100">
-                <View className="mb-4">
-                  <View className="bg-lime-100 px-3 py-1.5 rounded-lg self-start mb-2">
-                    <Text className="text-lime-700 font-semibold text-xs">
-                      ANDROID
-                    </Text>
-                  </View>
-                  <Text className="text-gray-700 text-sm leading-6">
-                    Settings → Digital Wellbeing & parental controls → Dashboard
-                    → Tap any app
-                  </Text>
-                </View>
-                <View>
-                  <View className="bg-purple-100 px-3 py-1.5 rounded-lg self-start mb-2">
-                    <Text className="text-purple-700 font-semibold text-xs">
-                      iOS
-                    </Text>
-                  </View>
-                  <Text className="text-gray-700 text-sm leading-6">
-                    Settings → Screen Time → See All Activity → Scroll to app
-                  </Text>
-                </View>
-              </View>
-            )}
 
             {/* Search & Sort */}
-            <View className="flex-row gap-3 mb-6">
-              <View className="flex-1 relative">
-                <Ionicons
-                  name="search"
-                  size={20}
-                  color="#9ca3af"
-                  style={{ position: "absolute", left: 16, top: 14, zIndex: 1 }}
-                />
+            <View className="mb-6">
+              <View className="flex-row items-center bg-white rounded-2xl p-1 shadow-sm border border-gray-200 mb-4">
+                <Ionicons name="search" size={20} color="#9CA3AF" className="ml-4 mr-2" />
                 <TextInput
+                  className="flex-1 py-3 text-base text-[#1A1A1A] font-medium"
                   placeholder="Search apps..."
+                  placeholderTextColor="#9CA3AF"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  className="bg-white border border-gray-200 pl-12 pr-4 py-3.5 rounded-2xl text-[#212121]"
-                  placeholderTextColor="#9ca3af"
                 />
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setSortBy(sortBy === "usage" ? "name" : "usage");
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                className="bg-white border border-gray-200 px-5 py-3.5 rounded-2xl items-center justify-center"
-              >
-                <Text className="font-semibold text-gray-700">
-                  {sortBy === "usage" ? "Chart" : "Alphabet"}
-                </Text>
-              </TouchableOpacity>
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={() => setSortBy("usage")}
+                  className={`flex-1 bg-white rounded-2xl py-3 items-center shadow-sm border ${sortBy === "usage" ? 'border-[#A3E635]' : 'border-gray-200'}`}
+                >
+                  <Text className={`text-base font-medium ${sortBy === "usage" ? 'text-[#1A1A1A]' : 'text-gray-600'}`}>
+                    By Usage
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setSortBy("name")}
+                  className={`flex-1 bg-white rounded-2xl py-3 items-center shadow-sm border ${sortBy === "name" ? 'border-[#A3E635]' : 'border-gray-200'}`}
+                >
+                  <Text className={`text-base font-medium ${sortBy === "name" ? 'text-[#1A1A1A]' : 'text-gray-600'}`}>
+                    By Name
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowAddModal(true)}
+                  className="flex-1 bg-[#A3E635] rounded-2xl py-3 items-center shadow-sm"
+                >
+                  <Text className="text-[#1A1A1A] text-base font-medium">
+                    Add App
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Add New App Button */}
-            <TouchableOpacity
-              onPress={() => {
-                setShowAddModal(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }}
-              className="bg-lime-400 rounded-2xl p-5 mb-6 shadow-sm flex-row items-center justify-center"
-            >
-              <Ionicons name="add-circle-outline" size={24} color="white" />
-              <Text className="text-white font-bold text-lg ml-3">
-                Add New App
-              </Text>
-            </TouchableOpacity>
+            {/* App List */}
+            {filteredAndSortedApps.map((app) => {
+              const log = todayLogs[app.name];
+              const isExpanded = expandedApp === app.name;
+              const currentHours = Math.floor((log?.durationMinutes || 0) / 60);
+              const currentMinutes = (log?.durationMinutes || 0) % 60;
 
-            {/* App Cards */}
-            {filteredAndSortedApps.length === 0 ? (
-              <View className="bg-white rounded-2xl p-12 items-center shadow-sm border border-gray-100">
-                <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
-                <Text className="text-gray-500 mt-4">
-                  No apps found. Add one to get started!
-                </Text>
-              </View>
-            ) : (
-              filteredAndSortedApps.map((app) => {
-                const log = todayLogs[app.name];
-                const isExpanded = expandedApp === app.name;
-                const hours = log ? Math.floor(log.durationMinutes / 60) : 0;
-                const minutes = log ? log.durationMinutes % 60 : 0;
+              return (
+                <View key={app.name} className="mb-4">
+                  <TouchableOpacity
+                    onPress={() => setExpandedApp(isExpanded ? null : app.name)}
+                    className="bg-white rounded-2xl p-5 flex-row items-center justify-between shadow-sm border border-gray-200"
+                  >
+                    <View>
+                      <Text className="text-[#1A1A1A] text-lg font-bold">
+                        {app.name}
+                      </Text>
+                      <Text className="text-gray-600 text-sm mt-1">
+                        {formatDuration(log?.durationMinutes || 0)}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={isExpanded ? "chevron-up" : "chevron-down"}
+                      size={24}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
 
-                return (
-                  <View key={app.name} className="mb-3">
-                    {/* Collapsed Card */}
-                    <TouchableOpacity
-                      onPress={() => {
-                        setExpandedApp(isExpanded ? null : app.name);
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      }}
-                      className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 mr-3">
-                          <Text className="text-[#212121] text-lg font-bold mb-1">
-                            {app.name}
-                          </Text>
-                          <View className="flex-row items-center">
-                            <View
-                              className={`px-3 py-1 rounded-lg ${TAG_COLORS[app.tag]}`}
-                            >
-                              <Text
-                                className={`text-xs font-semibold ${TAG_TEXT_COLORS[app.tag]}`}
-                              >
-                                {app.tag}
-                              </Text>
-                            </View>
-                            {log && (
-                              <>
-                                <Text className="text-gray-400 mx-2">•</Text>
-                                <Text className="text-gray-700 font-bold">
-                                  {formatDuration(log.durationMinutes)}
-                                </Text>
-                              </>
-                            )}
+                  {isExpanded && (
+                    <View className="bg-white rounded-b-2xl p-5 border-t border-gray-200">
+                      {/* Duration Picker */}
+                      <View className="mb-6">
+                        <Text className="text-[#1A1A1A] font-bold mb-3">
+                          Time Spent
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => openTimePicker(app.name)}
+                          className="bg-white border border-gray-200 rounded-2xl p-4 flex-row items-center justify-between"
+                        >
+                          <View>
+                            <Text className="text-[#1A1A1A] text-lg font-medium">
+                              {formatDuration(log?.durationMinutes || 0)}
+                            </Text>
+                            <Text className="text-gray-600 text-sm mt-1">
+                              Tap to set duration
+                            </Text>
                           </View>
-                        </View>
-                        <View className="flex-row items-center">
-                          {log && (
-                            <Ionicons
-                              name={
-                                MOOD_OPTIONS.find((m) => m.value === log.mood)
-                                  ?.icon as any
-                              }
-                              size={24}
-                              color={
-                                MOOD_OPTIONS.find((m) => m.value === log.mood)
-                                  ?.color
-                              }
-                              style={{ marginRight: 8 }}
-                            />
-                          )}
-                          <Ionicons
-                            name={isExpanded ? "chevron-up" : "chevron-down"}
-                            size={20}
-                            color="#9ca3af"
-                          />
-                        </View>
+                          <Ionicons name="time-outline" size={24} color="#A3E635" />
+                        </TouchableOpacity>
                       </View>
-                    </TouchableOpacity>
 
-                    {/* Expanded Card */}
-                    {isExpanded && (
-                      <View className="bg-white rounded-2xl p-5 mt-2 shadow-sm border border-gray-100">
-                        {/* Duration Input */}
-                        <View className="mb-6">
-                          <Text className="text-[#212121] font-bold mb-3">
-                            Time Spent Today
-                          </Text>
-                          <View className="flex-row gap-3 mb-4">
-                            <View className="flex-1">
-                              <TextInput
-                                placeholder="0"
-                                value={hours > 0 ? String(hours) : ""}
-                                onChangeText={(text) => {
-                                  const h = Math.min(
-                                    Math.max(parseInt(text) || 0, 0),
-                                    24
-                                  );
-                                  updateDuration(app.name, h, minutes);
-                                }}
-                                keyboardType="number-pad"
-                                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-[#212121] font-bold text-xl text-center"
-                                maxLength={2}
-                              />
-                              <Text className="text-gray-500 text-xs text-center mt-1">
-                                hours
-                              </Text>
-                            </View>
-                            <View className="flex-1">
-                              <TextInput
-                                placeholder="0"
-                                value={minutes > 0 ? String(minutes) : ""}
-                                onChangeText={(text) => {
-                                  const m = Math.min(
-                                    Math.max(parseInt(text) || 0, 0),
-                                    59
-                                  );
-                                  updateDuration(app.name, hours, m);
-                                }}
-                                keyboardType="number-pad"
-                                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-[#212121] font-bold text-xl text-center"
-                                maxLength={2}
-                              />
-                              <Text className="text-gray-500 text-xs text-center mt-1">
-                                minutes
-                              </Text>
-                            </View>
-                          </View>
-
-                          {/* Custom Slider */}
-                          <View className="mt-2">
-                            <CustomSlider
-                              value={log?.durationMinutes || 0}
-                              onValueChange={(val: number) => {
+                      {/* Mood Selection */}
+                      <View className="mb-6">
+                        <Text className="text-[#1A1A1A] font-bold mb-3">
+                          How did it make you feel?
+                        </Text>
+                        <View className="flex-row justify-between">
+                          {MOOD_OPTIONS.map((mood) => (
+                            <TouchableOpacity
+                              key={mood.value}
+                              onPress={() => {
+                                saveLog(app.name, { mood: mood.value });
                                 setTodayLogs((prev) => ({
                                   ...prev,
                                   [app.name]: {
                                     ...prev[app.name],
-                                    appName: app.name,
-                                    durationMinutes: val,
-                                    mood: prev[app.name]?.mood || 3,
-                                    tag: app.tag,
+                                    mood: mood.value,
                                   },
                                 }));
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                               }}
-                              onSlidingComplete={(val: number) => {
-                                saveLog(app.name, { durationMinutes: val });
-                                Haptics.impactAsync(
-                                  Haptics.ImpactFeedbackStyle.Light
-                                );
-                              }}
-                              minimumValue={0}
-                              maximumValue={480}
-                            />
-                            <View className="flex-row justify-between px-1">
-                              <Text className="text-gray-500 text-xs">0m</Text>
-                              <Text className="text-gray-500 text-xs">8h</Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        {/* Mood Selection */}
-                        <View className="mb-6">
-                          <Text className="text-[#212121] font-bold mb-3">
-                            How did it make you feel?
-                          </Text>
-                          <View className="flex-row justify-between">
-                            {MOOD_OPTIONS.map((mood) => (
-                              <TouchableOpacity
-                                key={mood.value}
-                                onPress={() => {
-                                  saveLog(app.name, { mood: mood.value });
-                                  setTodayLogs((prev) => ({
-                                    ...prev,
-                                    [app.name]: {
-                                      ...prev[app.name],
-                                      mood: mood.value,
-                                    },
-                                  }));
-                                  Haptics.impactAsync(
-                                    Haptics.ImpactFeedbackStyle.Medium
-                                  );
-                                }}
-                                className={`flex-1 mx-1 p-3 rounded-xl border-2 items-center ${log?.mood === mood.value
-                                  ? "border-purple-500 bg-purple-50"
-                                  : "border-gray-200 bg-white"
-                                  }`}
-                              >
-                                <Ionicons
-                                  name={mood.icon as any}
-                                  size={24}
-                                  color={
-                                    log?.mood === mood.value
-                                      ? mood.color
-                                      : "#9ca3af"
-                                  }
-                                />
-                                <Text
-                                  className={`text-xs font-semibold mt-1 ${log?.mood === mood.value
-                                    ? "text-[#212121]"
-                                    : "text-gray-500"
-                                    }`}
-                                >
-                                  {mood.label}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        </View>
-
-                        {/* Note */}
-                        <View className="mb-6">
-                          <Text className="text-[#212121] font-bold mb-3">
-                            Add a note (optional)
-                          </Text>
-                          <TextInput
-                            placeholder="e.g., Productive work session..."
-                            value={log?.note || ""}
-                            onChangeText={(text) => {
-                              setTodayLogs((prev) => ({
-                                ...prev,
-                                [app.name]: {
-                                  ...prev[app.name],
-                                  note: text,
-                                },
-                              }));
-                            }}
-                            onBlur={() => {
-                              const note = (log?.note || "").trim();
-                              if (note !== (todayLogs[app.name]?.note || "").trim()) {
-                                saveLog(app.name, { note });
-                              }
-                            }}
-                            multiline
-                            numberOfLines={3}
-                            className="bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-[#212121]"
-                            placeholderTextColor="#9ca3af"
-                          />
-                        </View>
-
-                        {/* Category Tags */}
-                        <View>
-                          <Text className="text-[#212121] font-bold mb-3">
-                            Category
-                          </Text>
-                          <View className="flex-row flex-wrap gap-2">
-                            {TAGS.map((tag) => {
-                              const isSelected = app.tag === tag;
-                              return (
-                                <TouchableOpacity
-                                  key={tag}
-                                  onPress={async () => {
-                                    const appDoc = doc(
-                                      db,
-                                      "users",
-                                      currentUser!.uid,
-                                      "trackedApps",
-                                      app.name
-                                    );
-                                    await updateDoc(appDoc, { tag });
-
-                                    if (todayLogs[app.name]) {
-                                      saveLog(app.name, { tag });
-                                    }
-
-                                    setTrackedApps((prev) =>
-                                      prev.map((a) =>
-                                        a.name === app.name ? { ...a, tag } : a
-                                      )
-                                    );
-                                    Haptics.impactAsync(
-                                      Haptics.ImpactFeedbackStyle.Light
-                                    );
-                                  }}
-                                  className={`px-4 py-2 rounded-xl border-2 ${isSelected
-                                    ? `${TAG_COLORS[tag]} border-gray-300`
-                                    : "bg-white border-gray-200"
-                                    }`}
-                                >
-                                  <Text
-                                    className={`text-sm font-semibold ${isSelected
-                                      ? TAG_TEXT_COLORS[tag]
-                                      : "text-gray-600"
-                                      }`}
-                                  >
-                                    {tag}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
+                              className={`flex-1 mx-1 p-3 rounded-xl items-center shadow-sm border border-gray-200 ${log?.mood === mood.value ? "bg-[#A3E635]/10" : "bg-white"}`}
+                            >
+                              <Ionicons
+                                name={mood.icon as any}
+                                size={24}
+                                color={log?.mood === mood.value ? mood.color : "#9CA3AF"}
+                              />
+                              <Text className={`text-xs font-medium mt-1 ${log?.mood === mood.value ? "text-[#1A1A1A]" : "text-gray-600"}`}>
+                                {mood.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
                         </View>
                       </View>
-                    )}
-                  </View>
-                );
-              })
-            )}
+
+                      {/* Note */}
+                      <View className="mb-6">
+                        <Text className="text-[#1A1A1A] font-bold mb-3">
+                          Add a note (optional)
+                        </Text>
+                        <TextInput
+                          placeholder="e.g., Productive work session..."
+                          value={log?.note || ""}
+                          onChangeText={(text) => {
+                            setTodayLogs((prev) => ({
+                              ...prev,
+                              [app.name]: {
+                                ...prev[app.name],
+                                note: text,
+                              },
+                            }));
+                          }}
+                          onBlur={() => {
+                            const note = (log?.note || "").trim();
+                            if (note !== (todayLogs[app.name]?.note || "").trim()) {
+                              saveLog(app.name, { note });
+                            }
+                          }}
+                          multiline
+                          numberOfLines={3}
+                          className="bg-white border border-gray-200 px-4 py-3 rounded-2xl text-[#1A1A1A]"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </View>
+
+                      {/* Category Tags */}
+                      <View>
+                        <Text className="text-[#1A1A1A] font-bold mb-3">
+                          Category
+                        </Text>
+                        <View className="flex-row flex-wrap gap-2">
+                          {TAGS.map((tag) => {
+                            const isSelected = app.tag === tag;
+                            return (
+                              <TouchableOpacity
+                                key={tag}
+                                onPress={async () => {
+                                  const appDoc = doc(
+                                    db,
+                                    "users",
+                                    currentUser!.uid,
+                                    "trackedApps",
+                                    app.name
+                                  );
+                                  await updateDoc(appDoc, { tag });
+
+                                  if (todayLogs[app.name]) {
+                                    saveLog(app.name, { tag });
+                                  }
+
+                                  setTrackedApps((prev) =>
+                                    prev.map((a) =>
+                                      a.name === app.name ? { ...a, tag } : a
+                                    )
+                                  );
+                                  Haptics.impactAsync(
+                                    Haptics.ImpactFeedbackStyle.Light
+                                  );
+                                }}
+                                className={`px-4 py-2 rounded-xl border ${isSelected ? `${TAG_COLORS[tag]}` : "bg-white border-gray-200"}`}
+                              >
+                                <Text
+                                  className={`text-sm font-medium ${isSelected ? TAG_TEXT_COLORS[tag] : "text-gray-600"}`}
+                                >
+                                  {tag}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </Animated.View>
         </ScrollView>
+
+        {/* Time Picker Modal */}
+        <Modal
+          visible={showTimePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={handleTimePickerCancel}
+        >
+          {selectedAppForTime && (
+            <TimePicker
+              initialHours={Math.floor((todayLogs[selectedAppForTime]?.durationMinutes || 0) / 60)}
+              initialMinutes={(todayLogs[selectedAppForTime]?.durationMinutes || 0) % 60}
+              onConfirm={handleTimePickerConfirm}
+              onCancel={handleTimePickerCancel}
+            />
+          )}
+        </Modal>
 
         {/* Add App Modal */}
         <Modal
@@ -769,17 +596,16 @@ export default function LogScreen() {
           animationType="fade"
           onRequestClose={() => setShowAddModal(false)}
         >
-          <View className="flex-1 bg-[#212121]/50 justify-center items-center px-5">
-            <View className="bg-white rounded-3xl p-6 w-full max-w-md">
+          <View className="flex-1 bg-[#1A1A1A]/50 justify-center items-center px-6">
+            <View className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-lg">
               <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-[#212121] text-2xl font-bold">
+                <Text className="text-[#1A1A1A] text-xl font-bold">
                   Add New App
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowAddModal(false)}
-                  className="p-2"
                 >
-                  <Ionicons name="close" size={24} color="#9ca3af" />
+                  <Ionicons name="close" size={24} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
 
@@ -789,31 +615,29 @@ export default function LogScreen() {
                 onChangeText={setNewAppName}
                 onSubmitEditing={handleAddApp}
                 autoFocus
-                className="bg-gray-50 border border-gray-200 px-4 py-4 rounded-xl text-[#212121] mb-4"
-                placeholderTextColor="#9ca3af"
+                className="bg-white border border-gray-200 px-4 py-3 rounded-2xl text-[#1A1A1A] mb-6"
+                placeholderTextColor="#9CA3AF"
               />
 
               <View className="flex-row gap-3">
                 <TouchableOpacity
                   onPress={() => setShowAddModal(false)}
-                  className="flex-1 bg-gray-100 py-4 rounded-xl items-center"
+                  className="flex-1 bg-gray-100 py-3 rounded-2xl items-center shadow-sm"
                 >
-                  <Text className="font-bold text-gray-700">Cancel</Text>
+                  <Text className="text-gray-700 font-medium">Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleAddApp}
                   disabled={!newAppName.trim()}
-                  className={`flex-1 py-4 rounded-xl items-center flex-row justify-center ${newAppName.trim() ? "bg-lime-400" : "bg-gray-300"
-                    }`}
+                  className={`flex-1 py-3 rounded-2xl items-center shadow-sm flex-row justify-center ${newAppName.trim() ? "bg-[#A3E635]" : "bg-gray-300"}`}
                 >
                   <Ionicons
-                    name="checkmark-circle"
+                    name="add-circle"
                     size={20}
-                    color={newAppName.trim() ? "#212121" : "#9ca3af"}
+                    color={newAppName.trim() ? "#1A1A1A" : "#9CA3AF"}
                   />
                   <Text
-                    className={`font-bold ml-2 ${newAppName.trim() ? "text-[#212121]" : "text-gray-500"
-                      }`}
+                    className={`font-medium ml-2 ${newAppName.trim() ? "text-[#1A1A1A]" : "text-gray-500"}`}
                   >
                     Add App
                   </Text>

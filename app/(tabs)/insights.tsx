@@ -11,6 +11,7 @@ import {
   Animated,
   Share,
   Dimensions,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,16 +31,13 @@ import {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PieChart, BarChart } from "react-native-chart-kit";
 
-// Import exercises data safely
 const { exercisesData } = require("@/data/exercisesData");
-
 const { width } = Dimensions.get("window");
-const CHART_WIDTH = width - 48;
+const CHART_WIDTH = width - 80; // Padding-safe
 const CHART_HEIGHT = 220;
 
 const genAI = new GoogleGenerativeAI(process.env.EXPO_PUBLIC_GEMINI_API_KEY!);
 
-// Tag colors from log.tsx
 const TAG_COLORS: Record<string, string> = {
   Social: "#C4B5FD",
   Games: "#FCA5A5",
@@ -70,7 +68,7 @@ interface DailyData {
 
 export default function Insights() {
   const { currentUser } = useAuth();
-  const [selectedDate] = useState(new Date()); // For future date picker
+  const [selectedDate] = useState(new Date());
   const [data, setData] = useState<DailyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,7 +77,6 @@ export default function Insights() {
 
   const todayKey = format(selectedDate, "yyyy-MM-dd");
 
-  // === ANIMATION ===
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -88,7 +85,6 @@ export default function Insights() {
     }).start();
   }, [fadeAnim]);
 
-  // === FETCH DATA ===
   const fetchData = useCallback(async () => {
     if (!currentUser) {
       setLoading(false);
@@ -99,17 +95,14 @@ export default function Insights() {
     try {
       const uid = currentUser.uid;
 
-      // 1. App Logs
       const logsRef = collection(db, "users", uid, "logs", todayKey, "apps");
       const logsSnap = await getDocs(logsRef);
       const logs: any[] = logsSnap.docs.map((d) => d.data());
 
-      // 2. Exercise Progress
       const progressRef = doc(db, "users", uid, "dailyProgress", todayKey);
       const progressSnap = await getDoc(progressRef);
       const progress = progressSnap.exists() ? progressSnap.data() : null;
 
-      // === AGGREGATE DATA ===
       const totalScreenTime = logs.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
       const validMoods = logs.filter((l) => l.mood).map((l) => l.mood);
       const avgMood = validMoods.length > 0 ? validMoods.reduce((a, b) => a + b, 0) / validMoods.length : 0;
@@ -138,7 +131,6 @@ export default function Insights() {
       const screenHours = totalScreenTime / 60;
       const breaksRatio = totalExercises > 0 ? Math.min(totalExercises / Math.max(screenHours, 1), 3) : 0;
 
-
       const exerciseScore = Math.min(totalExercises / 5, 1);
       const screenScore = 1 - Math.min(screenHours / 5, 1);
       const moodScore = avgMood / 10;
@@ -152,7 +144,6 @@ export default function Insights() {
       );
 
       const wellnessScore = Math.min(100, Math.max(0, score));
-
       const aiReport = progress?.aiReport;
 
       setData({
@@ -178,13 +169,11 @@ export default function Insights() {
     fetchData();
   }, [fetchData]);
 
-  // === REFRESH ===
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
   };
 
-  // === GENERATE AI REPORT ===
   const generateReport = async () => {
     if (!data || !currentUser || generatingReport) return;
 
@@ -244,7 +233,6 @@ OUTPUT FORMAT (strict):
     }
   };
 
-  // === SHARE REPORT ===
   const shareReport = async () => {
     if (!data?.aiReport) return;
     try {
@@ -256,22 +244,23 @@ OUTPUT FORMAT (strict):
     }
   };
 
-  // === NO DATA UI ===
+  // === NO USER ===
   if (!currentUser) {
     return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center px-6">
-        <Text className="text-[#212121] font-bold text-lg text-center">
+      <SafeAreaView className="flex-1 bg-lime-100 justify-center items-center px-6">
+        <Text className="text-[#1A1A1A] font-bold text-xl text-center">
           Sign in to view your insights
         </Text>
       </SafeAreaView>
     );
   }
 
+  // === LOADING ===
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
+      <SafeAreaView className="flex-1 bg-lime-100 justify-center items-center">
         <ActivityIndicator size="large" color="#A3E635" />
-        <Text className="text-gray-600 mt-4">Loading your insights...</Text>
+        <Text className="text-[#1A1A1A] mt-4 text-base">Loading insights...</Text>
       </SafeAreaView>
     );
   }
@@ -279,184 +268,202 @@ OUTPUT FORMAT (strict):
   const hasData = data && (data.totalScreenTime > 0 || data.totalExercises > 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-lime-100">
       <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
-        className="flex-1"
+        contentContainerClassName="px-6 pt-8 pb-12"
       >
-        <Animated.View style={{ opacity: fadeAnim }} className="px-6 pt-6">
+        <Animated.View style={{ opacity: fadeAnim }}>
+
           {/* Header */}
           <View className="flex-row items-center justify-between mb-6">
-            <Text className="text-[#212121] text-3xl font-bold">
+            <Text className="text-[#1A1A1A] text-3xl font-bold tracking-tight">
               Insights
             </Text>
             <TouchableOpacity
               onPress={generateReport}
               disabled={generatingReport || !hasData}
-              className={`w-12 h-12 rounded-full items-center justify-center shadow-md ${hasData ? "bg-lime-400" : "bg-gray-200"
+              className={`w-12 h-12 rounded-full items-center justify-center shadow-sm ${hasData ? "bg-[#A3E635]" : "bg-gray-200"
                 }`}
             >
               {generatingReport ? (
-                <ActivityIndicator size="small" color="#212121" />
+                <ActivityIndicator size="small" color="#1A1A1A" />
               ) : (
-                <Ionicons name="refresh" size={24} color="#212121" />
+                <Ionicons name="refresh" size={24} color="#1A1A1A" />
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Date */}
-          <Text className="text-gray-600 text-base mb-6">
+          <Text className="text-gray-600 text-base mb-8">
             {format(selectedDate, "EEEE, MMMM d, yyyy")}
           </Text>
 
-          {/* No Data */}
+          {/* === EMPTY STATE === */}
           {!hasData && (
             <View className="items-center py-16">
-              <View className="bg-gray-100 w-24 h-24 rounded-full items-center justify-center mb-6">
-                <Ionicons name="analytics-outline" size={48} color="#9CA3AF" />
+              <View className="w-64 h-64 rounded-full overflow-hidden mb-6 shadow-lg">
+                <Image
+                  source={require("@/assets/images/ai_coach.png")}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
               </View>
-              <Text className="text-gray-600 text-lg font-medium text-center">
-                No activity yet today
+              <Text className="text-[#1A1A1A] text-xl font-bold text-center mb-2">
+                No logs yet today
               </Text>
-              <Text className="text-gray-500 text-center mt-2 px-8">
-                Log apps or complete exercises to see insights
+              <Text className="text-gray-600 text-center px-8 text-base">
+                Log your screen time or complete exercises to unlock AI insights.
               </Text>
             </View>
           )}
 
+          {/* === HAS DATA === */}
           {hasData && data && (
             <>
               {/* Summary Cards */}
-              <View className="flex-row flex-wrap justify-between mb-8 gap-3">
-                <View className="bg-white border border-gray-200 rounded-2xl p-4 flex-1 min-w-[48%] shadow-sm">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="time-outline" size={20} color="#A3E635" />
-                    <Text className="text-gray-600 text-sm ml-2">Screen Time</Text>
+              <View className="flex-row flex-wrap justify-between gap-3 mb-8">
+                {[
+                  { icon: "time-outline", label: "Screen Time", value: `${Math.floor(data.totalScreenTime / 60)}h ${data.totalScreenTime % 60}m` },
+                  { icon: "happy-outline", label: "Mood", value: `${data.avgMood}/5` },
+                  { icon: "leaf-outline", label: "Exercises", value: `${data.totalExercises}` },
+                  { icon: "star", label: "Score", value: `${data.wellnessScore}` },
+                ].map((item, i) => (
+                  <View key={i} className="bg-white border border-gray-200 rounded-2xl p-5 flex-1 min-w-[48%] shadow-sm">
+                    <View className="flex-row items-center mb-2">
+                      <Ionicons name={item.icon as any} size={20} color="#A3E635" />
+                      <Text className="text-gray-600 text-sm ml-2">{item.label}</Text>
+                    </View>
+                    <Text className="text-[#1A1A1A] text-2xl font-bold">{item.value}</Text>
                   </View>
-                  <Text className="text-[#212121] text-2xl font-bold">
-                    {Math.floor(data.totalScreenTime / 60)}h {data.totalScreenTime % 60}m
-                  </Text>
-                </View>
-
-                <View className="bg-white border border-gray-200 rounded-2xl p-4 flex-1 min-w-[48%] shadow-sm">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="happy-outline" size={20} color="#A855F7" />
-                    <Text className="text-gray-600 text-sm ml-2">Mood</Text>
-                  </View>
-                  <Text className="text-[#212121] text-2xl font-bold">
-                    {data.avgMood}/5
-                  </Text>
-                </View>
-
-                <View className="bg-white border border-gray-200 rounded-2xl p-4 flex-1 min-w-[48%] shadow-sm">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="leaf-outline" size={20} color="#84CC16" />
-                    <Text className="text-gray-600 text-sm ml-2">Exercises</Text>
-                  </View>
-                  <Text className="text-[#212121] text-2xl font-bold">
-                    {data.totalExercises}
-                  </Text>
-                </View>
-
-                <View className="bg-white border border-gray-200 rounded-2xl p-4 flex-1 min-w-[48%] shadow-sm">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="star" size={20} color="#F59E0B" />
-                    <Text className="text-gray-600 text-sm ml-2">Score</Text>
-                  </View>
-                  <Text className="text-[#212121] text-2xl font-bold">
-                    {data.wellnessScore}
-                  </Text>
-                </View>
+                ))}
               </View>
 
               {/* Charts */}
               <View className="space-y-6 mb-8">
-                {/* Tag Pie */}
                 {Object.keys(data.tagBreakdown).length > 0 && (
                   <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                    <Text className="text-[#212121] font-bold text-lg mb-4">
+                    <Text className="text-[#1A1A1A] font-bold text-lg mb-4">
                       Screen Time by Category
                     </Text>
-                    <PieChart
-                      data={Object.entries(data.tagBreakdown).map(([tag, mins]) => ({
-                        name: tag,
-                        value: mins,
-                        color: TAG_COLORS[tag] || "#E5E7EB",
-                        legendFontColor: "#374151",
-                        legendFontSize: 12,
-                      }))}
-                      width={CHART_WIDTH}
-                      height={CHART_HEIGHT}
-                      chartConfig={{
-                        color: () => "#000",
-                      }}
-                      accessor="value"
-                      backgroundColor="transparent"
-                      paddingLeft="15"
-                      absolute
-                    />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <PieChart
+                        data={Object.entries(data.tagBreakdown).map(([tag, mins]) => ({
+                          name: tag,
+                          value: mins,
+                          color: TAG_COLORS[tag] || "#E5E7EB",
+                          legendFontColor: "#374151",
+                          legendFontSize: 12,
+                        }))}
+                        width={Math.max(CHART_WIDTH, Object.keys(data.tagBreakdown).length * 80)}
+                        height={CHART_HEIGHT}
+                        chartConfig={{ color: () => "#000" }}
+                        accessor="value"
+                        backgroundColor="transparent"
+                        paddingLeft="15"
+                        absolute
+                      />
+                    </ScrollView>
                   </View>
                 )}
 
-                {/* Mood Bar */}
-                {data.moodDistribution.some((v) => v > 0) && (
+                {data.moodDistribution.some(v => v > 0) && (
                   <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                    <Text className="text-[#212121] font-bold text-lg mb-4">
+                    <Text className="text-[#1A1A1A] font-bold text-lg mb-4">
                       Mood Distribution
                     </Text>
-                    <BarChart
-                      data={{
-                        labels: ["1", "2", "3", "4", "5"],
-                        datasets: [{ data: data.moodDistribution }],
-                      }}
-                      width={CHART_WIDTH}
-                      height={CHART_HEIGHT}
-                      yAxisLabel=""
-                      yAxisSuffix=""
-                      chartConfig={{
-                        backgroundGradientFrom: "#fff",
-                        backgroundGradientTo: "#fff",
-                        decimalPlaces: 0,
-                        color: (opacity = 1, index = 0) => MOOD_COLORS[index] || "#ccc",
-                        labelColor: () => "#374151",
-                      }}
-                      fromZero
-                      showValuesOnTopOfBars
-                    />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <BarChart
+                        data={{
+                          labels: ["1", "2", "3", "4", "5"],
+                          datasets: [{ data: data.moodDistribution }],
+                        }}
+                        width={CHART_WIDTH}
+                        height={CHART_HEIGHT}
+                        yAxisLabel=""
+                        yAxisSuffix=""
+                        chartConfig={{
+                          backgroundGradientFrom: "#fff",
+                          backgroundGradientTo: "#fff",
+                          decimalPlaces: 0,
+                          color: (opacity = 1, index = 0) => MOOD_COLORS[index] || "#ccc",
+                          labelColor: () => "#374151",
+                        }}
+                        fromZero
+                        showValuesOnTopOfBars
+                        style={{ paddingRight: 20 }}
+                      />
+                    </ScrollView>
                   </View>
                 )}
               </View>
 
-              {/* AI Report */}
+              {/* ====================== PREMIUM AI REPORT (FIXED) ====================== */}
               {data.aiReport ? (
-                <View className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-6 mb-8">
-                  <View className="flex-row items-center justify-between mb-4">
-                    <Text className="text-purple-700 font-bold text-lg">
-                      Your Daily Report
+                /* ——— REPORT DISPLAY ——— */
+                <View className="relative rounded-3xl p-1 mb-8 shadow-xl">
+                  {/* Animated Gradient Border */}
+                  <View className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-indigo-600 rounded-3xl animate-pulse" />
+
+                  {/* Inner White Card */}
+                  <View className="bg-white rounded-[22px] p-6 relative z-10">
+                    {/* Header */}
+                    <View className="flex-row items-center justify-between mb-5">
+                      <View className="flex-row items-center">
+                        <View className="w-12 h-12 rounded-2xl  items-center justify-center mr-3">
+                          <Ionicons name="sparkles" size={26} color="#9333ea" />
+                        </View>
+                        <View>
+                          <Text className="text-[#1A1A1A] font-bold text-lg">Your AI Wellness Report</Text>
+                          <Text className="text-gray-500 text-xs">Generated {format(new Date(), "h:mm a")}</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={shareReport}
+                        className="w-11 h-11 rounded-full bg-purple-100 items-center justify-center shadow-sm"
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="share-outline" size={20} color="#9333EA" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Report Text */}
+                    <Text className="text-[#1A1A1A] leading-7 text-base font-medium whitespace-pre-line">
+                      {data.aiReport.text}
                     </Text>
-                    <TouchableOpacity onPress={shareReport}>
-                      <Ionicons name="share-outline" size={22} color="#9333EA" />
+
+                    {/* Regenerate Button */}
+                    <TouchableOpacity
+                      onPress={generateReport}
+                      className="mt-5 bg-purple-50 border border-purple-200 rounded-2xl py-3 px-5 items-center flex-row justify-center"
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="refresh" size={18} color="#9333EA" className="mr-2" />
+                      <Text className="text-purple-700 font-semibold">Regenerate Report</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text className="text-[#212121] leading-6 whitespace-pre-line">
-                    {data.aiReport.text}
-                  </Text>
                 </View>
               ) : (
+                /* ——— GENERATE BUTTON ——— */
                 <TouchableOpacity
                   onPress={generateReport}
-                  className="bg-gradient-to-r from-lime-400 to-purple-500 p-6 rounded-2xl items-center shadow-lg mb-8"
+                  className="relative rounded-3xl p-1 mb-8 shadow-xl"
+                  activeOpacity={0.9}
                 >
-                  <Ionicons name="sparkles" size={28} color="#212121" />
-                  <Text className="text-[#212121] font-bold text-lg mt-2">
-                    Generate AI Report
-                  </Text>
-                  <Text className="text-[#212121]/80 text-sm mt-1">
-                    Get personalized insights
-                  </Text>
+                  {/* Gradient Border */}
+                  <View className="absolute inset-0 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-indigo-600 rounded-3xl" />
+
+                  {/* Inner Card */}
+                  <View className="bg-white rounded-[22px] p-6 items-center relative z-10">
+                    {/* Glow Icon */}
+                    <View className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-600 items-center justify-center shadow-lg mb-4 relative">
+                      <View className="absolute inset-0 rounded-2xl bg-purple-400 blur-xl opacity-70" />
+                      <Ionicons name="sparkles" size={36} color="white" />
+                    </View>
+
+                    <Text className="text-[#1A1A1A] font-bold text-xl text-center">Unlock AI Insights</Text>
+                    <Text className="text-gray-600 text-sm mt-1 text-center">Personalized wellness report in seconds</Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </>

@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from "react-native";
 import { auth, db } from "@/firebase"; // Ensure you have this setup
 import { doc, setDoc, getDoc, updateDoc, arrayUnion, increment } from "firebase/firestore";
@@ -14,6 +13,7 @@ import ExerciseIntroModal from "@/components/ExerciseIntroModal";
 import ExerciseTimerModal from "@/components/ExerciseTimerModal";
 import { exercisesData, exerciseCategories } from "@/data/exercisesData";
 import { Exercise, ExerciseType } from "@/types/exercises";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Exercises() {
   // -------------------------------------------------------------------------
@@ -133,7 +133,7 @@ export default function Exercises() {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-lime-100">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="px-6 py-8 border-b border-gray-200">
@@ -156,8 +156,8 @@ export default function Exercises() {
                   key={category.id}
                   onPress={() => setSelectedCategory(category.id as any)}
                   className={`px-5 py-3 mr-3 rounded-full border-2 ${selectedCategory === category.id
-                      ? "bg-lime-400 border-[#212121]"
-                      : "bg-white border-gray-300"
+                    ? "bg-lime-400 border-[#212121]"
+                    : "bg-white border-gray-300"
                     }`}
                   style={{
                     shadowColor: "#000",

@@ -1,4 +1,4 @@
-// components/FloatingActionButton.tsx (updated)
+// components/FloatingActionButton.tsx
 import { Image, TouchableOpacity, View } from "react-native";
 
 interface FloatingActionButtonProps {
@@ -15,7 +15,7 @@ export default function FloatingActionButton({
   if (!visible) return null;
 
   const positionStyles = {
-    "bottom-right": "bottom-20 right-4", // Changed from bottom-4 to bottom-20
+    "bottom-right": "bottom-20 right-4",
     "bottom-center": "bottom-20 self-center",
     "bottom-left": "bottom-20 left-4",
   };
@@ -24,11 +24,14 @@ export default function FloatingActionButton({
     <View className={`absolute ${positionStyles[position]} z-50`}>
       <TouchableOpacity
         onPress={onPress}
-        className="bg-lime-400 w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-black/30"
+        className="w-16 h-16" // Only size, no background, no border, no shadow
+        activeOpacity={0.8}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Better tap area
       >
         <Image
           source={require("@/assets/images/ai-profile.jpg")}
-          resizeMode="contain"
+          resizeMode="cover"
+          className="w-full h-full rounded-full"
         />
       </TouchableOpacity>
     </View>

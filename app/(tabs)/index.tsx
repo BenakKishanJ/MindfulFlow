@@ -24,9 +24,11 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { router } from "expo-router";
+import { SwipeListView } from 'react-native-swipe-list-view';
 
 interface Task {
   id: string;
@@ -196,6 +198,34 @@ export default function Home() {
     }
   };
 
+  const deleteTask = async (taskId: string) => {
+    if (!currentUser?.uid) return;
+
+    Alert.alert(
+      "Delete Task",
+      "Are you sure you want to delete this task?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const taskRef = doc(db, "users", currentUser.uid, "tasks", taskId);
+              await deleteDoc(taskRef);
+
+              setTasks((prev) => prev.filter((t) => t.id !== taskId));
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (err) {
+              Alert.alert("Error", "Failed to delete task.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
   // === TOGGLE TASK ===
   const toggleTask = async (taskId: string, completed: boolean) => {
     if (!currentUser.uid) return;
@@ -359,112 +389,160 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Today's Tasks - White Background */}
-        <View className="bg-white px-6 py-8">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-[#212121] text-2xl font-bold">Today&apos;s Tasks</Text>
-            <View className="bg-lime-400 px-3 py-1 rounded-full">
-              <Text className="text-[#2D2D2D] font-bold text-sm">
-                {tasks.filter(t => !t.completed).length} pending
+        {/* -TODAY'S TASKS – White background (same as Calendar’s “active” day) -- */}
+        <View className="bg-lime-100 px-6 pt-8 pb-20">
+          {/* ====================== TODAY'S TASKS ====================== */}
+          <View className="mb-10">
+            <View className="flex-row items-center justify-between mb-5">
+              <Text className="text-[#1A1A1A] text-3xl font-bold tracking-tight">
+                Today&apos;s Tasks
               </Text>
+              <View className="bg-[#A3E635] px-4 py-1.5 rounded-full">
+                <Text className="text-[#1A1A1A] font-bold text-sm">
+                  {tasks.filter(t => !t.completed).length} left
+                </Text>
+              </View>
             </View>
-          </View>
 
-          {tasks.length === 0 ? (
-            <View className="py-8 items-center">
-              <Ionicons name="checkmark-circle-outline" size={48} color="#A3E635" />
-              <Text className="text-gray-500 text-base mt-3">No tasks yet. Add one below!</Text>
-            </View>
-          ) : (
-            tasks.map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                className="bg-white rounded-2xl mb-3 border-l-4 overflow-hidden"
-                style={{
-                  borderLeftColor: task.completed ? '#9CA3AF' : '#A3E635',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-                onPress={() => toggleTask(task.id, task.completed)}
-              >
-                <View className="flex-row items-center p-4">
-                  <View className="mr-3">
+            {/* Task List with Swipe-to-Delete */}
+            {tasks.length === 0 ? (
+              <View className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 items-center shadow-sm border border-gray-200">
+                <Ionicons name="sparkles" size={40} color="#A3E635" />
+                <Text className="text-gray-600 text-base font-medium mt-3">
+                  All clear! Add a task to get started.
+                </Text>
+              </View>
+            ) : (
+              <SwipeListView
+                data={tasks}
+                renderItem={({ item: task }) => (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => toggleTask(task.id, task.completed)}
+                    className={`
+              bg-white rounded-2xl p-5 flex-row items-center mx-1 my-1
+              shadow-sm border
+              ${task.completed ? 'border-gray-300 opacity-80' : 'border-[#A3E635]'}
+            `}
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 6,
+                      elevation: 2,
+                    }}
+                  >
+                    <View className="mr-4">
+                      <View
+                        className={`
+                  w-7 h-7 rounded-full border-2 flex items-center justify-center
+                  ${task.completed ? 'border-gray-400' : 'border-[#A3E635]'}
+                `}
+                      >
+                        {task.completed && (
+                          <View className="w-3.5 h-3.5 bg-[#A3E635] rounded-full" />
+                        )}
+                      </View>
+                    </View>
+
+                    <Text
+                      className={`
+                flex-1 text-lg font-medium
+                ${task.completed ? 'text-gray-500 line-through' : 'text-[#1A1A1A]'}
+              `}
+                    >
+                      {task.title}
+                    </Text>
+
                     <Ionicons
-                      name={task.completed ? "checkmark-circle" : "ellipse-outline"}
-                      size={28}
+                      name="chevron-forward"
+                      size={20}
                       color={task.completed ? "#9CA3AF" : "#A3E635"}
                     />
+                  </TouchableOpacity>
+                )}
+                renderHiddenItem={({ item: task }) => (
+                  <View className="flex-row justify-end items-center h-full px-4">
+                    <TouchableOpacity
+                      onPress={() => deleteTask(task.id)}
+                      className="bg-red-500 p-5 rounded-xl"
+                    >
+                      <Ionicons name="trash" size={24} color="white" />
+                    </TouchableOpacity>
                   </View>
-                  <Text
-                    className={`flex-1 text-base font-medium ${task.completed ? "text-gray-400 line-through" : "text-[#2D2D2D]"
-                      }`}
-                  >
-                    {task.title}
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={task.completed ? "#9CA3AF" : "#6B2D8C"}
-                  />
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
-
-          {/* Add Task Input */}
-          <KeyboardAvoidingView behavior="padding">
-            <View className="flex-row items-center mt-4">
-              <TextInput
-                className="flex-1 bg-purple-100 border-purple-400 border-2 px-4 py-4 rounded-2xl text-[#2D2D2D] text-base"
-                placeholder="Add a new task..."
-                placeholderTextColor="#9CA3AF"
-                value={newTask}
-                onChangeText={setNewTask}
-                onSubmitEditing={addTask}
+                )}
+                rightOpenValue={-80}
+                disableRightSwipe
+                keyExtractor={(item) => item.id}
+                useFlatList
               />
-              <TouchableOpacity
-                onPress={addTask}
-                className="ml-3 bg-[#6B2D8C] p-4 rounded-2xl"
-              >
-                <Ionicons name="add" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
+            )}
 
-        {/* Stats Section - Beige Background */}
-        <View className="bg-[#212121] px-6 py-8">
-          <Text className="text-white text-2xl font-bold mb-4">Your Progress</Text>
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-lime-100 rounded-2xl p-4 items-center shadow-sm border-2 border-lime-300">
-              <Ionicons name="flame" size={32} color="#A3E635" />
-              <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
-                {stats.streak}
-              </Text>
-              <Text className="text-gray-600 text-sm mt-1">Day Streak</Text>
-            </View>
-            <View className="flex-1 bg-purple-300 rounded-2xl p-4 items-center shadow-sm border-2 border-purple-400">
-              <Ionicons name="leaf" size={32} color="#6B2D8C" />
-              <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
-                {stats.totalExercises}
-              </Text>
-              <Text className="text-gray-600 text-sm mt-1">Exercises</Text>
+            {/* Add Task – Floating Style */}
+            <View className="mt-6">
+              <View className="flex-row items-center bg-white rounded-2xl p-1 shadow-sm border border-gray-200">
+                <TextInput
+                  className="flex-1 px-5 py-4 text-base text-[#1A1A1A] font-medium"
+                  placeholder="What needs to be done?"
+                  placeholderTextColor="#9CA3AF"
+                  value={newTask}
+                  onChangeText={setNewTask}
+                  onSubmitEditing={addTask}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  onPress={addTask}
+                  className="bg-[#A3E635] p-4 rounded-xl mr-1"
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={24} color="#1A1A1A" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-          <View className="mt-3 bg-white rounded-2xl p-4 items-center shadow-sm">
-            <Ionicons name="time" size={32} color="#A3E635" />
-            <Text className="text-[#2D2D2D] text-2xl font-bold mt-2">
-              {stats.screenTime}
+
+          {/* ====================== YOUR PROGRESS ====================== */}
+          <View>
+            <Text className="text-[#1A1A1A] text-3xl font-bold tracking-tight mb-6">
+              Your Flow
             </Text>
-            <Text className="text-gray-600 text-sm mt-1">Screen Time Today</Text>
+
+            <View className="flex-row gap-4 mb-5">
+              {/* Streak */}
+              <View className="flex-1 bg-white rounded-2xl p-5 items-center shadow-sm border border-gray-200">
+                <View className="w-14 h-14 bg-[#A3E635]/10 rounded-2xl items-center justify-center mb-3">
+                  <Ionicons name="flame" size={32} color="#A3E635" />
+                </View>
+                <Text className="text-[#1A1A1A] text-3xl font-bold">{stats.streak}</Text>
+                <Text className="text-gray-600 text-xs font-medium mt-1 uppercase tracking-wider">
+                  Day Streak
+                </Text>
+              </View>
+
+              {/* Exercises */}
+              <View className="flex-1 bg-white rounded-2xl p-5 items-center shadow-sm border border-gray-200">
+                <View className="w-14 h-14 bg-[#A3E635]/10 rounded-2xl items-center justify-center mb-3">
+                  <Ionicons name="leaf" size={32} color="#A3E635" />
+                </View>
+                <Text className="text-[#1A1A1A] text-3xl font-bold">{stats.totalExercises}</Text>
+                <Text className="text-gray-600 text-xs font-medium mt-1 uppercase tracking-wider">
+                  Exercises
+                </Text>
+              </View>
+
+              {/* Screen Time */}
+              <View className="flex-1 bg-white rounded-2xl p-5 items-center shadow-sm border border-gray-200">
+                <View className="w-14 h-14 bg-[#A3E635]/10 rounded-2xl items-center justify-center mb-3">
+                  <Ionicons name="time" size={32} color="#A3E635" />
+                </View>
+                <Text className="text-[#1A1A1A] text-3xl font-bold">{stats.screenTime}</Text>
+                <Text className="text-gray-600 text-xs font-medium mt-1 uppercase tracking-wider">
+                  Screen Time
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
-
-        {/* Bottom Spacing */}
-        <View className="h-4" />
       </ScrollView>
     </SafeAreaView>
   );
