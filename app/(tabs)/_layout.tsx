@@ -72,6 +72,15 @@ export default function TabLayout() {
           }}
         />
 
+        <Tabs.Screen
+          name="posture"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="body" focused={focused} />
+            ),
+          }}
+        />
+
       </Tabs>
 
       {/* === FLOATING ACTION BUTTON (FAB) === */}
