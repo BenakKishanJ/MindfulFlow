@@ -1,11 +1,23 @@
 // app/blink.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Camera, useCameraDevice, useCameraFormat } from 'react-native-vision-camera';
-import FaceDetection from '@react-native-ml-kit/face-detection';
-import BlinkRateStats from '@/components/BlinkRateStats';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Camera,
+  useCameraDevice,
+  useCameraFormat,
+} from "react-native-vision-camera";
+// import {FaceDetection, scanFaces} from '@react-native-ml-kit/face-detection';
+import BlinkRateStats from "@/components/BlinkRateStats";
+import FaceDetection from "@react-native-ml-kit/face-detection";
 
 interface DetectedFace {
   leftEyeOpenProbability: number;
@@ -29,7 +41,7 @@ export default function BlinkMonitor() {
   const [sessionTime, setSessionTime] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const device = useCameraDevice('front');
+  const device = useCameraDevice("front");
   const cameraRef = useRef<Camera>(null);
 
   const format = useCameraFormat(device, [
@@ -38,7 +50,10 @@ export default function BlinkMonitor() {
   ]);
 
   const blinkDataRef = useRef<{ timestamp: number }[]>([]);
-  const lastBlinkStateRef = useRef<{ left: boolean; right: boolean }>({ left: true, right: true });
+  const lastBlinkStateRef = useRef<{ left: boolean; right: boolean }>({
+    left: true,
+    right: true,
+  });
   const sessionStartRef = useRef<number>(0);
   const lastDetectionTimeRef = useRef<number>(0);
 
@@ -46,7 +61,7 @@ export default function BlinkMonitor() {
   useEffect(() => {
     (async () => {
       const status = await Camera.requestCameraPermission();
-      setHasPermission(status === 'granted');
+      setHasPermission(status === "granted");
     })();
   }, []);
 
@@ -56,7 +71,9 @@ export default function BlinkMonitor() {
     if (isMonitoring) {
       sessionStartRef.current = Date.now();
       interval = setInterval(() => {
-        setSessionTime(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+        setSessionTime(
+          Math.floor((Date.now() - sessionStartRef.current) / 1000),
+        );
       }, 1000);
     }
     return () => interval && clearInterval(interval);
@@ -66,7 +83,9 @@ export default function BlinkMonitor() {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      blinkDataRef.current = blinkDataRef.current.filter(d => now - d.timestamp < 60000);
+      blinkDataRef.current = blinkDataRef.current.filter(
+        (d) => now - d.timestamp < 60000,
+      );
       setBlinkRate(blinkDataRef.current.length);
     }, 2000);
     return () => clearInterval(interval);
@@ -83,9 +102,10 @@ export default function BlinkMonitor() {
     const leftBlink = !leftOpen && wasLeft;
     const rightBlink = !rightOpen && wasRight;
 
-    const lastBlinkTime = blinkDataRef.current[blinkDataRef.current.length - 1]?.timestamp || 0;
+    const lastBlinkTime =
+      blinkDataRef.current[blinkDataRef.current.length - 1]?.timestamp || 0;
     if ((leftBlink || rightBlink) && Date.now() - lastBlinkTime > 200) {
-      setTotalBlinks(p => p + 1);
+      setTotalBlinks((p) => p + 1);
       blinkDataRef.current.push({ timestamp: Date.now() });
     }
 
@@ -94,7 +114,12 @@ export default function BlinkMonitor() {
 
   // === Face Detection ===
   const detectFaces = useCallback(async () => {
-    if (!cameraRef.current || isProcessing || Date.now() - lastDetectionTimeRef.current < 300) return;
+    if (
+      !cameraRef.current ||
+      isProcessing ||
+      Date.now() - lastDetectionTimeRef.current < 300
+    )
+      return;
 
     setIsProcessing(true);
     lastDetectionTimeRef.current = Date.now();
@@ -104,12 +129,15 @@ export default function BlinkMonitor() {
       if (!photo.path) return;
 
       const options = {
-        performanceMode: 'fast' as const,
-        classificationMode: 'all' as const,
+        performanceMode: "fast" as const,
+        classificationMode: "all" as const,
         minFaceSize: 0.1,
       };
 
-      const detected = await FaceDetection.detect(`file://${photo.path}`, options);
+      const detected = await FaceDetection.detect(
+        `file://${photo.path}`,
+        options,
+      );
       if (detected.length > 0) {
         const face = detected[0];
         const processed: DetectedFace = {
@@ -124,7 +152,7 @@ export default function BlinkMonitor() {
         setFaces([]);
       }
     } catch (err) {
-      console.log('Detection error:', err);
+      console.log("Detection error:", err);
     } finally {
       setIsProcessing(false);
     }
@@ -159,7 +187,7 @@ export default function BlinkMonitor() {
         [
           { text: "Cancel", style: "cancel" },
           { text: "Start", onPress: startMonitoring },
-        ]
+        ],
       );
     }
   };
@@ -168,7 +196,9 @@ export default function BlinkMonitor() {
   if (hasPermission === null) {
     return (
       <SafeAreaView className="flex-1 bg-lime-100 justify-center items-center px-6">
-        <Text className="text-[#1A1A1A] text-lg font-medium">Requesting camera access...</Text>
+        <Text className="text-[#1A1A1A] text-lg font-medium">
+          Requesting camera access...
+        </Text>
       </SafeAreaView>
     );
   }
@@ -176,7 +206,9 @@ export default function BlinkMonitor() {
   if (hasPermission === false) {
     return (
       <SafeAreaView className="flex-1 bg-lime-100 justify-center items-center px-6">
-        <Text className="text-[#1A1A1A] text-xl font-bold mb-2">Camera Required</Text>
+        <Text className="text-[#1A1A1A] text-xl font-bold mb-2">
+          Camera Required
+        </Text>
         <Text className="text-gray-600 text-base text-center">
           Please enable camera in Settings to use blink monitoring.
         </Text>
@@ -187,7 +219,9 @@ export default function BlinkMonitor() {
   if (!device) {
     return (
       <SafeAreaView className="flex-1 bg-lime-100 justify-center items-center px-6">
-        <Text className="text-[#1A1A1A] text-lg font-medium">Front camera not found</Text>
+        <Text className="text-[#1A1A1A] text-lg font-medium">
+          Front camera not found
+        </Text>
       </SafeAreaView>
     );
   }
@@ -195,21 +229,29 @@ export default function BlinkMonitor() {
   // === Main UI ===
   return (
     <SafeAreaView className="flex-1 bg-lime-100">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-6 pt-8 pb-12">
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-6 pt-8 pb-12"
+      >
         {/* Header */}
         <View className="mb-8">
-          <Text className="text-[#1A1A1A] text-3xl font-bold tracking-tight">Blink Monitor</Text>
-          <Text className="text-gray-600 text-base mt-1">Track eye health in real time</Text>
+          <Text className="text-[#1A1A1A] text-3xl font-bold tracking-tight">
+            Blink Monitor
+          </Text>
+          <Text className="text-gray-600 text-base mt-1">
+            Track eye health in real time
+          </Text>
         </View>
 
         {/* Control Card */}
         <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-6">
           <View className="items-center">
-            <View className={`
+            <View
+              className={`
               w-20 h-20 rounded-2xl items-center justify-center mb-4
-              ${isMonitoring ? 'bg-[#A3E635]/10' : 'bg-gray-100'}
-            `}>
+              ${isMonitoring ? "bg-[#A3E635]/10" : "bg-gray-100"}
+            `}
+            >
               <Ionicons
                 name={isMonitoring ? "eye" : "eye-off"}
                 size={36}
@@ -222,7 +264,9 @@ export default function BlinkMonitor() {
             </Text>
             <Text className="text-gray-600 text-sm mt-1">
               {isMonitoring
-                ? faces.length > 0 ? "Face detected" : "Looking for face..."
+                ? faces.length > 0
+                  ? "Face detected"
+                  : "Looking for face..."
                 : "Tap to begin"}
             </Text>
 
@@ -230,7 +274,7 @@ export default function BlinkMonitor() {
               onPress={toggleMonitoring}
               className={`
                 mt-5 px-8 py-3 rounded-xl font-medium
-                ${isMonitoring ? 'bg-red-500' : 'bg-[#A3E635]'}
+                ${isMonitoring ? "bg-red-500" : "bg-[#A3E635]"}
               `}
               activeOpacity={0.8}
             >
@@ -288,8 +332,12 @@ export default function BlinkMonitor() {
                 <Ionicons name="information-circle" size={20} color="#A3E635" />
               </View>
               <View className="flex-1">
-                <Text className="text-[#1A1A1A] font-bold text-base">Healthy Rate</Text>
-                <Text className="text-gray-600 text-sm mt-1">15–20 blinks per minute</Text>
+                <Text className="text-[#1A1A1A] font-bold text-base">
+                  Healthy Rate
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">
+                  15–20 blinks per minute
+                </Text>
               </View>
             </View>
           </View>
@@ -300,8 +348,12 @@ export default function BlinkMonitor() {
                 <Ionicons name="warning" size={20} color="#F59E0B" />
               </View>
               <View className="flex-1">
-                <Text className="text-[#1A1A1A] font-bold text-base">Low Rate</Text>
-                <Text className="text-gray-600 text-sm mt-1">&lt;10 may mean eye strain</Text>
+                <Text className="text-[#1A1A1A] font-bold text-base">
+                  Low Rate
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">
+                  &lt;10 may mean eye strain
+                </Text>
               </View>
             </View>
           </View>
@@ -312,13 +364,16 @@ export default function BlinkMonitor() {
                 <Ionicons name="eye" size={20} color="#A3E635" />
               </View>
               <View className="flex-1">
-                <Text className="text-[#1A1A1A] font-bold text-base">Powered by ML Kit</Text>
-                <Text className="text-gray-600 text-sm mt-1">Real-time eye tracking</Text>
+                <Text className="text-[#1A1A1A] font-bold text-base">
+                  Powered by ML Kit
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">
+                  Real-time eye tracking
+                </Text>
               </View>
             </View>
           </View>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

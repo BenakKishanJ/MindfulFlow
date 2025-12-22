@@ -1,7 +1,7 @@
 // components/BlinkRateStats.tsx
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 interface BlinkRateStatsProps {
   blinkRate: number;
@@ -24,12 +24,28 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
 
   const getBlinkStatus = (rate: number) => {
     if (rate >= 15 && rate <= 20)
-      return { status: "Optimal", color: "#A3E635", icon: "checkmark-circle" as const };
+      return {
+        status: "Optimal",
+        color: "#A3E635",
+        icon: "checkmark-circle" as const,
+      };
     if (rate < 10)
-      return { status: "Low – Risk of Strain", color: "#ef4444", icon: "warning" as const };
+      return {
+        status: "Low – Risk of Strain",
+        color: "#ef4444",
+        icon: "warning" as const,
+      };
     if (rate < 15)
-      return { status: "Slightly Low", color: "#f97316", icon: "alert-circle" as const };
-    return { status: "High – Relax Eyes", color: "#f59e0b", icon: "alert-circle" as const };
+      return {
+        status: "Slightly Low",
+        color: "#f97316",
+        icon: "alert-circle" as const,
+      };
+    return {
+      status: "High – Relax Eyes",
+      color: "#f59e0b",
+      icon: "alert-circle" as const,
+    };
   };
 
   const { status, color, icon } = getBlinkStatus(blinkRate);
@@ -88,10 +104,9 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
             <Text style={styles.tipsTitle}>Pro Tips for Better Detection</Text>
           </View>
           <Text style={styles.tipsText}>
-            • Sit in a well-lit room{"\n"}
-            • Keep your full face in the frame{"\n"}
-            • Remove glasses if they reflect light{"\n"}
-            • Avoid moving too quickly
+            • Sit in a well-lit room{"\n"}• Keep your full face in the frame
+            {"\n"}• Remove glasses if they reflect light{"\n"}• Avoid moving too
+            quickly
           </Text>
         </View>
       )}
@@ -101,64 +116,65 @@ const BlinkRateStats: React.FC<BlinkRateStatsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 20,
     marginVertical: 12,
     marginHorizontal: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 6,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginBottom: 8,
   },
   statusText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontWeight: "bold",
+    color: "#1A1A1A",
   },
   statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 24,
   },
   statCard: {
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     borderRadius: 16,
-    minWidth: 90,
+    flex: 1,
+    marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   statValue: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontWeight: "bold",
+    color: "#1A1A1A",
   },
   statLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginTop: 4,
-    fontWeight: '500',
-    textTransform: 'uppercase',
+    fontWeight: "500",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   healthSection: {
@@ -166,61 +182,61 @@ const styles = StyleSheet.create({
   },
   healthTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#1A1A1A",
+    textAlign: "center",
     marginBottom: 12,
   },
   progressBar: {
     height: 12,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 8,
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 6,
   },
   progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 4,
   },
   labelLow: {
     fontSize: 11,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   labelOptimal: {
     fontSize: 11,
-    color: '#A3E635',
-    fontWeight: '600',
+    color: "#A3E635",
+    fontWeight: "600",
   },
   labelHigh: {
     fontSize: 11,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   tipsCard: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: "#F0FDF4",
     padding: 16,
     borderRadius: 16,
     borderLeftWidth: 5,
-    borderLeftColor: '#A3E635',
+    borderLeftColor: "#A3E635",
   },
   tipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
   tipsTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: "600",
+    color: "#1A1A1A",
   },
   tipsText: {
     fontSize: 13.5,
-    color: '#4B5563',
+    color: "#4B5563",
     lineHeight: 20,
   },
 });
